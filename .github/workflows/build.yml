@@ -1,0 +1,49 @@
+name: Android CI
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  workflow_dispatch: # Allows you to manually trigger the build
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+        cache: gradle
+
+    - name: Setup Gradle
+      uses: gradle/actions/setup-gradle@v3
+      with:
+        gradle-version: '8.4'
+
+    - name: Build Debug APK
+      run: gradle assembleDebug
+
+    - name: Build Release APK (Unsigned)
+      run: gradle assembleRelease
+
+    - name: Build Release AAB (Unsigned)
+      run: gradle bundleRelease
+
+    - name: Upload APKs
+      uses: actions/upload-artifact@v4
+      with:
+        name: Android-APKs
+        path: |
+          app/build/outputs/apk/debug/*.apk
+          app/build/outputs/apk/release/*.apk
+
+    - name: Upload AAB
+      uses: actions/upload-artifact@v4
+      with:
+        name: Android-AAB
+        path: app/build/outputs/bundle/release/*.aab

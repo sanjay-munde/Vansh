@@ -1,0 +1,60 @@
+<resources>
+    <string name="app_name">Vansh - Family Tree Maker</string>
+    <!-- Member List -->
+    <string name="family_members">Family Members</string>
+    <string name="add_member">Add Member</string>
+    <string name="search_by_name">Search by name...</string>
+    <string name="filters">Filters</string>
+    <string name="no_family_members_found">No family members found.</string>
+    <string name="living">Living</string>
+    <string name="deceased">Deceased</string>
+    <string name="all">All</string>
+    <string name="male">Male</string>
+    <string name="female">Female</string>
+    <string name="other">Other</string>
+    <string name="status">Status</string>
+    <string name="gender">Gender</string>
+    <string name="place_of_birth">Place of Birth / Village</string>
+    <string name="relationship_finder">Relationship Finder</string>
+
+    <!-- Member Profile -->
+    <string name="profile">Profile</string>
+    <string name="edit">Edit</string>
+    <string name="back">Back</string>
+    <string name="set_photo">Set Photo</string>
+    <string name="media_documents">Media &amp; Documents</string>
+    <string name="no_media_attached">No media attached.</string>
+    <string name="attached_file">Attached File</string>
+    <string name="attach_file">Attach File</string>
+    <string name="timeline">Timeline</string>
+    <string name="no_events_found">No events found.</string>
+    <string name="unknown_date">Unknown Date</string>
+    
+    <!-- Member Form -->
+    <string name="save">Save</string>
+    <string name="delete">Delete</string>
+    <string name="first_name">First Name</string>
+    <string name="middle_name">Middle Name</string>
+    <string name="last_name">Last Name</string>
+    <string name="birth_date">Birth Date</string>
+    <string name="death_date">Death Date</string>
+    <string name="is_living">Is Living?</string>
+
+    <!-- Analytics -->
+    <string name="family_analytics">Family Analytics</string>
+    <string name="demographics">Demographics</string>
+    <string name="total_members">Total Members</string>
+    <string name="insights">Insights</string>
+    <string name="average_age">Average Age</string>
+    <string name="max_generation_depth">Max Generation Depth</string>
+    <string name="years">years</string>
+    <string name="generations">generations</string>
+
+    <!-- Relationship Finder -->
+    <string name="select_member_1">Select Member 1</string>
+    <string name="select_member_2">Select Member 2</string>
+    <string name="member_1">Member 1</string>
+    <string name="member_2">Member 2</string>
+    <string name="relationship">Relationship</string>
+    <string name="calculating_relationship">Calculating relationship...</string>
+</resources>

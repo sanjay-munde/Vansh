@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">वंश - फॅमिली ट्री मेकर</string>
+    <!-- Member List -->
+    <string name="family_members">कुटुंबातील सदस्य</string>
+    <string name="add_member">सदस्य जोडा</string>
+    <string name="search_by_name">नावाने शोधा...</string>
+    <string name="filters">फिल्टर्स</string>
+    <string name="no_family_members_found">कोणतेही सदस्य आढळले नाहीत.</string>
+    <string name="living">जिवंत</string>
+    <string name="deceased">मृत</string>
+    <string name="all">सर्व</string>
+    <string name="male">पुरुष</string>
+    <string name="female">स्त्री</string>
+    <string name="other">इतर</string>
+    <string name="status">स्थिती</string>
+    <string name="gender">लिंग</string>
+    <string name="place_of_birth">जन्मस्थान / गाव</string>
+    <string name="relationship_finder">नाते शोधक</string>
+
+    <!-- Member Profile -->
+    <string name="profile">प्रोफाइल</string>
+    <string name="edit">संपादित करा</string>
+    <string name="back">मागे</string>
+    <string name="set_photo">फोटो सेट करा</string>
+    <string name="media_documents">माध्यमे आणि कागदपत्रे</string>
+    <string name="no_media_attached">कोणतेही माध्यम जोडलेले नाही.</string>
+    <string name="attached_file">जोडलेली फाईल</string>
+    <string name="attach_file">फाईल जोडा</string>
+    <string name="timeline">वेळापत्रक</string>
+    <string name="no_events_found">कोणत्याही घटना आढळल्या नाहीत.</string>
+    <string name="unknown_date">अज्ञात तारीख</string>
+    
+    <!-- Member Form -->
+    <string name="save">जतन करा</string>
+    <string name="delete">हटवा</string>
+    <string name="first_name">पहिले नाव</string>
+    <string name="middle_name">मधले नाव</string>
+    <string name="last_name">आडनाव</string>
+    <string name="birth_date">जन्मतारीख</string>
+    <string name="death_date">मृत्यूची तारीख</string>
+    <string name="is_living">जिवंत आहेत का?</string>
+
+    <!-- Analytics -->
+    <string name="family_analytics">कौटुंबिक विश्लेषण</string>
+    <string name="demographics">लोकसंख्याशास्त्र</string>
+    <string name="total_members">एकूण सदस्य</string>
+    <string name="insights">अंतर्दृष्टी</string>
+    <string name="average_age">सरासरी वय</string>
+    <string name="max_generation_depth">कमाल पिढी खोली</string>
+    <string name="years">वर्षे</string>
+    <string name="generations">पिढ्या</string>
+
+    <!-- Relationship Finder -->
+    <string name="select_member_1">सदस्य १ निवडा</string>
+    <string name="select_member_2">सदस्य २ निवडा</string>
+    <string name="member_1">सदस्य १</string>
+    <string name="member_2">सदस्य २</string>
+    <string name="relationship">नाते</string>
+    <string name="calculating_relationship">नाते शोधत आहे...</string>
+</resources>
