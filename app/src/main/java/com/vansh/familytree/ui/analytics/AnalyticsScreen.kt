@@ -59,18 +59,16 @@ class AnalyticsViewModel @Inject constructor(
                 var ageCount = 0
                 val currentYear = LocalDate.now().year
                 members.forEach { m ->
-                    val birthParts = m.birthDate?.split("-")
-                    if (birthParts != null && birthParts.size == 3) {
-                        val birthYear = birthParts[0].toIntOrNull()
-                        if (birthYear != null) {
-                            val deathYear = if (!m.isLiving && m.deathDate != null) {
-                                m.deathDate.split("-")[0].toIntOrNull() ?: currentYear
-                            } else {
-                                currentYear
-                            }
-                            totalAge += (deathYear - birthYear)
-                            ageCount++
+                    if (m.dateOfBirth != null) {
+                        // dateOfBirth is a timestamp in ms. Calculate approx year by converting to days
+                        val birthYear = java.time.Instant.ofEpochMilli(m.dateOfBirth).atZone(java.time.ZoneId.systemDefault()).year
+                        val deathYear = if (!m.isLiving && m.dateOfDeath != null) {
+                            java.time.Instant.ofEpochMilli(m.dateOfDeath).atZone(java.time.ZoneId.systemDefault()).year
+                        } else {
+                            currentYear
                         }
+                        totalAge += (deathYear - birthYear)
+                        ageCount++
                     }
                 }
                 val avgAge = if (ageCount > 0) totalAge.toDouble() / ageCount else 0.0
@@ -143,7 +141,7 @@ fun AnalyticsScreen(
             Card(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(stringResource(R.string.demographics), style = MaterialTheme.typography.titleMedium)
-                    HorizontalDivider()
+                    Divider()
                     Text("${stringResource(R.string.total_members)}: ${state.totalMembers}")
                     Text("${stringResource(R.string.living)}: ${state.livingMembers}", color = MaterialTheme.colorScheme.primary)
                     Text("${stringResource(R.string.deceased)}: ${state.deceasedMembers}", color = MaterialTheme.colorScheme.error)
@@ -155,7 +153,7 @@ fun AnalyticsScreen(
             Card(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(stringResource(R.string.insights), style = MaterialTheme.typography.titleMedium)
-                    HorizontalDivider()
+                    Divider()
                     Text("${stringResource(R.string.average_age)}: ${String.format("%.1f", state.averageAge)} ${stringResource(R.string.years)}")
                     Text("${stringResource(R.string.max_generation_depth)}: ${state.maxGenerationDepth} ${stringResource(R.string.generations)}")
                 }

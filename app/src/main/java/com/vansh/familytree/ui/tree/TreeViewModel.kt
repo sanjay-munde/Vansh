@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import androidx.compose.ui.geometry.Offset
 
 enum class ViewMode {
     FULL_TREE, ANCESTOR, DESCENDANT

@@ -140,8 +140,7 @@ fun RelationshipFinderScreen(
                     }
                 }
             }
-            
-            HorizontalDivider()
+            Divider()
             
             if (memberA != null && memberB != null) {
                 if (path != null) {

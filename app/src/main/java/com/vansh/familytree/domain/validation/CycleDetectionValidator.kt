@@ -23,24 +23,7 @@ class CycleDetectionValidator @Inject constructor(
             return ValidationResult.Valid
         }
 
-        val allRelationships = fetchAllGraphEdges()
-
-        // Temporarily add the new relationship to the graph
-        allRelationships.add(newRelationship)
-
-        return if (hasLineageCycle(allRelationships)) {
-            ValidationResult.Invalid("This relationship creates a circular lineage loop, which is biologically impossible.")
-        } else {
-            ValidationResult.Valid
-        }
-    }
-
-    private suspend fun fetchAllGraphEdges(): MutableList<Relationship> {
-        // In a real app with huge graphs, you'd fetch only the connected component,
-        // or query the DB using recursive CTEs. For now, assuming a manageable graph size.
-        // We'll simulate fetching all relations.
-        // A better approach is to do a DFS starting from targetId going UP to check if we reach subjectId.
-        return mutableListOf() // Placeholder, let's implement actual DFS
+        return validateByDFS(newRelationship.subjectId, newRelationship.targetId, newRelationship.type)
     }
 
     suspend fun validateByDFS(subjectId: String, targetId: String, type: RelationshipType): ValidationResult {
