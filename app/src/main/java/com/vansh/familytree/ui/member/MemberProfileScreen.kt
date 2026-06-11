@@ -34,6 +34,10 @@ fun MemberProfileScreen(
     val member by viewModel.member.collectAsState()
     val mediaList by viewModel.media.collectAsState()
     val timelineEvents by viewModel.timeline.collectAsState()
+    val relationships by viewModel.relationships.collectAsState()
+    val allMembers by viewModel.allMembers.collectAsState()
+    
+    var showRelationshipDialog by remember { mutableStateOf(false) }
 
     val photoPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia(),
@@ -101,9 +105,27 @@ fun MemberProfileScreen(
                 
                 Card(modifier = Modifier.fillMaxWidth()) {
                     Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text("${stringResource(R.string.gender)}: ${m.gender.name}")
-                        Text("${stringResource(R.string.status)}: ${if (m.isLiving) stringResource(R.string.living) else stringResource(R.string.deceased)}")
-                        // Add more details like DOB, POB, Bio here
+                        if (!m.nickname.isNullOrBlank()) {
+                            Text("Nickname: ${m.nickname}", style = MaterialTheme.typography.bodyMedium)
+                        }
+                        Text("${stringResource(R.string.gender)}: ${m.gender.name}", style = MaterialTheme.typography.bodyMedium)
+                        Text("${stringResource(R.string.status)}: ${if (m.isLiving) stringResource(R.string.living) else stringResource(R.string.deceased)}", style = MaterialTheme.typography.bodyMedium)
+                        
+                        val dateFormat = java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.getDefault())
+                        if (m.dateOfBirth != null) {
+                            Text("Date of Birth: ${dateFormat.format(java.util.Date(m.dateOfBirth))}", style = MaterialTheme.typography.bodyMedium)
+                        }
+                        if (!m.placeOfBirth.isNullOrBlank()) {
+                            Text("Place of Birth: ${m.placeOfBirth}", style = MaterialTheme.typography.bodyMedium)
+                        }
+                        if (m.dateOfDeath != null && !m.isLiving) {
+                            Text("Date of Death: ${dateFormat.format(java.util.Date(m.dateOfDeath))}", style = MaterialTheme.typography.bodyMedium)
+                        }
+                        if (!m.biography.isNullOrBlank()) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text("Biography", style = MaterialTheme.typography.titleSmall)
+                            Text(m.biography, style = MaterialTheme.typography.bodyMedium)
+                        }
                     }
                 }
                 
@@ -137,6 +159,44 @@ fun MemberProfileScreen(
                             }
                         }
                     }
+                }
+
+                Text("Relationships", style = MaterialTheme.typography.titleLarge)
+                if (relationships.isEmpty()) {
+                    Text("No relationships added yet.", style = MaterialTheme.typography.bodyMedium)
+                } else {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        relationships.forEach { rel ->
+                            val relatedMember = allMembers.find { it.id == rel.targetId }
+                            if (relatedMember != null) {
+                                Card(modifier = Modifier.fillMaxWidth()) {
+                                    Column(modifier = Modifier.padding(12.dp)) {
+                                        Text("${rel.type.name} - ${relatedMember.firstName} ${relatedMember.lastName}", style = MaterialTheme.typography.titleMedium)
+                                        rel.subtype?.let { Text("Subtype: ${it.name}", style = MaterialTheme.typography.bodyMedium) }
+                                        if (rel.startDate != null) {
+                                            val dateFormat = java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.getDefault())
+                                            Text("Since: ${dateFormat.format(java.util.Date(rel.startDate))}", style = MaterialTheme.typography.bodySmall)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                Button(onClick = { showRelationshipDialog = true }) {
+                    Text("Add Relationship")
+                }
+                
+                if (showRelationshipDialog) {
+                    RelationshipFormDialog(
+                        currentMemberId = memberId,
+                        allMembers = allMembers,
+                        onDismiss = { showRelationshipDialog = false },
+                        onSave = { targetId, type, subtype, startDate, endDate, location ->
+                            viewModel.addRelationship(targetId, type, subtype, startDate, endDate, location)
+                        }
+                    )
                 }
             } ?: run {
                 CircularProgressIndicator()
