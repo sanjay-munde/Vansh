@@ -36,6 +36,8 @@ fun TreeCanvas(
     highlightedNodeId: String?,
     onNodeDrag: (String, Offset) -> Unit,
     onNodeToggleCollapse: (String) -> Unit,
+    onNodeClick: (String) -> Unit,
+    onNodeLongClick: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     // Zoom & Pan state
@@ -74,6 +76,26 @@ fun TreeCanvas(
                             actualTouchY >= pos.y && actualTouchY <= pos.y + cardHeight
                         }
                         tappedNode?.let { onNodeToggleCollapse(it.id) }
+                    },
+                    onTap = { touchOffset ->
+                        val actualTouchX = (touchOffset.x - offset.x) / scale
+                        val actualTouchY = (touchOffset.y - offset.y) / scale
+                        val tappedNode = nodes.find { member ->
+                            val pos = nodePositions[member.id] ?: Offset.Zero
+                            actualTouchX >= pos.x && actualTouchX <= pos.x + cardWidth &&
+                            actualTouchY >= pos.y && actualTouchY <= pos.y + cardHeight
+                        }
+                        tappedNode?.let { onNodeClick(it.id) }
+                    },
+                    onLongPress = { touchOffset ->
+                        val actualTouchX = (touchOffset.x - offset.x) / scale
+                        val actualTouchY = (touchOffset.y - offset.y) / scale
+                        val tappedNode = nodes.find { member ->
+                            val pos = nodePositions[member.id] ?: Offset.Zero
+                            actualTouchX >= pos.x && actualTouchX <= pos.x + cardWidth &&
+                            actualTouchY >= pos.y && actualTouchY <= pos.y + cardHeight
+                        }
+                        tappedNode?.let { onNodeLongClick(it.id) }
                     }
                 )
             }

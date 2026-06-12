@@ -9,6 +9,7 @@ import java.io.File
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
+import androidx.core.content.FileProvider
 
 @Singleton
 class LocalMediaManager @Inject constructor(
@@ -31,5 +32,20 @@ class LocalMediaManager @Inject constructor(
             e.printStackTrace()
             null
         }
+    }
+
+    fun generateTempCameraUri(): Uri {
+        val cacheDir = File(context.cacheDir, "images")
+        cacheDir.mkdirs()
+        val tempFile = File.createTempFile(
+            "camera_${UUID.randomUUID()}",
+            ".jpg",
+            cacheDir
+        )
+        return FileProvider.getUriForFile(
+            context,
+            "${context.packageName}.fileprovider",
+            tempFile
+        )
     }
 }

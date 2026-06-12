@@ -20,6 +20,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 @Composable
 fun MegaTreeScreen(
     onNavigateBack: () -> Unit,
+    onNavigateToMemberProfile: (String) -> Unit,
+    onNavigateToMemberForm: (String?) -> Unit,
     viewModel: TreeViewModel = hiltViewModel()
 ) {
     val nodes by viewModel.graphNodes.collectAsState()
@@ -73,6 +75,8 @@ fun MegaTreeScreen(
                     highlightedNodeId = highlightedNodeId,
                     onNodeDrag = { nodeId, delta -> viewModel.updateNodePosition(nodeId, delta) },
                     onNodeToggleCollapse = { nodeId -> viewModel.toggleNodeCollapse(nodeId) },
+                    onNodeClick = { nodeId -> onNavigateToMemberProfile(nodeId) },
+                    onNodeLongClick = { nodeId -> onNavigateToMemberForm(nodeId) },
                     modifier = Modifier.fillMaxSize()
                 )
             }

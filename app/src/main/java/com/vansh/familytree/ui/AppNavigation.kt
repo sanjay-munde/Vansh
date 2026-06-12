@@ -24,6 +24,7 @@ import com.vansh.familytree.ui.analytics.RelationshipFinderScreen
 import com.vansh.familytree.ui.member.MemberFormScreen
 import com.vansh.familytree.ui.member.MemberListScreen
 import com.vansh.familytree.ui.member.MemberProfileScreen
+import com.vansh.familytree.ui.settings.SettingsScreen
 import com.vansh.familytree.ui.tree.MegaTreeScreen
 
 @Composable
@@ -104,6 +105,9 @@ fun AppNavigation() {
                     },
                     onNavigateToRelationshipFinder = {
                         navController.navigate("relationship_finder")
+                    },
+                    onNavigateToSettings = {
+                        navController.navigate("settings")
                     }
                 )
             }
@@ -136,7 +140,17 @@ fun AppNavigation() {
             }
             composable("mega_tree") {
                 MegaTreeScreen(
-                    onNavigateBack = { navController.navigateUp() }
+                    onNavigateBack = { navController.navigateUp() },
+                    onNavigateToMemberProfile = { memberId ->
+                        navController.navigate("profile/$memberId")
+                    },
+                    onNavigateToMemberForm = { memberId ->
+                        if (memberId == null) {
+                            navController.navigate("add_member")
+                        } else {
+                            navController.navigate("edit_member/$memberId")
+                        }
+                    }
                 )
             }
             composable("analytics") {
@@ -146,6 +160,11 @@ fun AppNavigation() {
             }
             composable("relationship_finder") {
                 RelationshipFinderScreen(
+                    onNavigateBack = { navController.navigateUp() }
+                )
+            }
+            composable("settings") {
+                SettingsScreen(
                     onNavigateBack = { navController.navigateUp() }
                 )
             }

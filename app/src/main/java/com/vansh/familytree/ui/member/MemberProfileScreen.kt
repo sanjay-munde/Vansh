@@ -46,7 +46,19 @@ fun MemberProfileScreen(
 
     val documentPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument(),
-        onResult = { uri -> uri?.let { viewModel.addDocument(it) } }
+        onResult = { uri ->
+            uri?.let { viewModel.addDocument(it) }
+        }
+    )
+
+    var currentCameraUri by remember { mutableStateOf<android.net.Uri?>(null) }
+    val cameraLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicture(),
+        onResult = { success ->
+            if (success) {
+                currentCameraUri?.let { viewModel.addCapturedPhoto(it) }
+            }
+        }
     )
 
     LaunchedEffect(memberId) {
@@ -97,8 +109,17 @@ fun MemberProfileScreen(
                     Column {
                         val fullName = listOfNotNull(m.firstName, m.middleName, m.lastName).joinToString(" ")
                         Text(text = fullName, style = MaterialTheme.typography.headlineMedium)
-                        Button(onClick = { photoPickerLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) }) {
-                            Text(stringResource(R.string.set_photo))
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Button(onClick = { photoPickerLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) }) {
+                                Text(stringResource(R.string.set_photo))
+                            }
+                            Button(onClick = {
+                                val uri = viewModel.generateCameraUri()
+                                currentCameraUri = uri
+                                cameraLauncher.launch(uri)
+                            }) {
+                                Text("Take Photo")
+                            }
                         }
                     }
                 }

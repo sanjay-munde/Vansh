@@ -77,6 +77,23 @@ class MemberProfileViewModel @Inject constructor(
         }
     }
 
+    fun generateCameraUri(): Uri {
+        return localMediaManager.generateTempCameraUri()
+    }
+
+    fun addCapturedPhoto(uri: Uri) {
+        val memberId = _member.value?.id ?: return
+        viewModelScope.launch {
+            val media = Media(
+                memberId = memberId,
+                uri = uri.toString(),
+                type = MediaType.PHOTO,
+                isProfilePhoto = true
+            )
+            repository.insertMedia(media)
+        }
+    }
+
     fun addDocument(uri: Uri) {
         val memberId = _member.value?.id ?: return
         viewModelScope.launch {
