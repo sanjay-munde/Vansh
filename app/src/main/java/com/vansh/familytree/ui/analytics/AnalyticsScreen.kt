@@ -32,7 +32,12 @@ data class AnalyticsState(
     val maleMembers: Int = 0,
     val femaleMembers: Int = 0,
     val averageAge: Double = 0.0,
-    val maxGenerationDepth: Int = 0
+    val maxGenerationDepth: Int = 0,
+    val longestLivingMemberName: String? = null,
+    val longestLivingAge: Int = 0,
+    val mostCommonBirthMonth: String? = null,
+    val marriageCount: Int = 0,
+    val parentChildLinkCount: Int = 0
 )
 
 @HiltViewModel
@@ -58,20 +63,39 @@ class AnalyticsViewModel @Inject constructor(
                 var totalAge = 0
                 var ageCount = 0
                 val currentYear = LocalDate.now().year
+                
+                var maxAge = 0
+                var longestLivingName: String? = null
+                val birthMonths = mutableMapOf<java.time.Month, Int>()
+
                 members.forEach { m ->
                     if (m.dateOfBirth != null) {
-                        // dateOfBirth is a timestamp in ms. Calculate approx year by converting to days
-                        val birthYear = java.time.Instant.ofEpochMilli(m.dateOfBirth).atZone(java.time.ZoneId.systemDefault()).year
+                        val birthDate = java.time.Instant.ofEpochMilli(m.dateOfBirth).atZone(java.time.ZoneId.systemDefault())
+                        val birthYear = birthDate.year
+                        val birthMonth = birthDate.month
+                        
+                        birthMonths[birthMonth] = birthMonths.getOrDefault(birthMonth, 0) + 1
+                        
                         val deathYear = if (!m.isLiving && m.dateOfDeath != null) {
                             java.time.Instant.ofEpochMilli(m.dateOfDeath).atZone(java.time.ZoneId.systemDefault()).year
                         } else {
                             currentYear
                         }
-                        totalAge += (deathYear - birthYear)
+                        val age = deathYear - birthYear
+                        totalAge += age
                         ageCount++
+                        
+                        if (age > maxAge) {
+                            maxAge = age
+                            longestLivingName = "${m.firstName} ${m.lastName}"
+                        }
                     }
                 }
                 val avgAge = if (ageCount > 0) totalAge.toDouble() / ageCount else 0.0
+                val mostCommonMonth = birthMonths.maxByOrNull { it.value }?.key?.name?.lowercase()?.replaceFirstChar { it.uppercase() }
+
+                val marriages = edges.count { it.type == RelationshipType.SPOUSE }
+                val parentChildLinks = edges.count { it.type == RelationshipType.PARENT || it.type == RelationshipType.CHILD }
 
                 val childEdges = edges.filter { it.type == RelationshipType.PARENT }
                 val parentToChildren = mutableMapOf<String, MutableList<String>>()
@@ -102,7 +126,12 @@ class AnalyticsViewModel @Inject constructor(
                     maleMembers = males,
                     femaleMembers = females,
                     averageAge = avgAge,
-                    maxGenerationDepth = maxDepth
+                    maxGenerationDepth = maxDepth,
+                    longestLivingMemberName = longestLivingName,
+                    longestLivingAge = maxAge,
+                    mostCommonBirthMonth = mostCommonMonth,
+                    marriageCount = marriages,
+                    parentChildLinkCount = parentChildLinks
                 )
             }.collect {
                 _state.value = it
@@ -156,6 +185,21 @@ fun AnalyticsScreen(
                     Divider()
                     Text("${stringResource(R.string.average_age)}: ${String.format("%.1f", state.averageAge)} ${stringResource(R.string.years)}")
                     Text("${stringResource(R.string.max_generation_depth)}: ${state.maxGenerationDepth} ${stringResource(R.string.generations)}")
+                }
+            }
+
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Fun Facts", style = MaterialTheme.typography.titleMedium)
+                    Divider()
+                    if (state.longestLivingMemberName != null) {
+                        Text("Longest Living: ${state.longestLivingMemberName} (${state.longestLivingAge} years)", color = MaterialTheme.colorScheme.primary)
+                    }
+                    if (state.mostCommonBirthMonth != null) {
+                        Text("Most Common Birth Month: ${state.mostCommonBirthMonth}")
+                    }
+                    Text("Marriages: ${state.marriageCount}")
+                    Text("Parent-Child Links: ${state.parentChildLinkCount}")
                 }
             }
         }

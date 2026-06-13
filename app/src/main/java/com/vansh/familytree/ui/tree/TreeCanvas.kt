@@ -34,19 +34,20 @@ fun TreeCanvas(
     nodePositions: Map<String, Offset>,
     collapsedNodeIds: Set<String>,
     highlightedNodeId: String?,
+    scale: Float,
+    offset: Offset,
+    onScaleChange: (Float) -> Unit,
+    onOffsetChange: (Offset) -> Unit,
     onNodeDrag: (String, Offset) -> Unit,
     onNodeToggleCollapse: (String) -> Unit,
     onNodeClick: (String) -> Unit,
     onNodeLongClick: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    // Zoom & Pan state
-    var scale by remember { mutableStateOf(1f) }
-    var offset by remember { mutableStateOf(Offset.Zero) }
 
     val state = rememberTransformableState { zoomChange, offsetChange, _ ->
-        scale = (scale * zoomChange).coerceIn(0.1f, 5f)
-        offset += offsetChange
+        onScaleChange((scale * zoomChange).coerceIn(0.1f, 5f))
+        onOffsetChange(offset + offsetChange)
     }
 
     // Text Measurer for drawing names on canvas
@@ -122,7 +123,7 @@ fun TreeCanvas(
                             onNodeDrag(id, scaledDragAmount)
                         } ?: run {
                             // If no node dragged, pan the canvas
-                            offset += dragAmount
+                            onOffsetChange(offset + dragAmount)
                         }
                     }
                 )

@@ -86,17 +86,81 @@ class TreeLayoutEngine @Inject constructor() {
             }
         }
 
-        // Assign X positions based on index within the generation
+        // Layered Assignment (X coordinates)
         val nodesByGen = generations.entries.groupBy({ it.value }, { it.key })
+        val spouseEdges = edges.filter { it.type == RelationshipType.SPOUSE }
         
-        nodesByGen.forEach { (gen, memberIds) ->
-            val startY = gen * (cardHeight + verticalSpacing)
-            var startX = -(memberIds.size * (cardWidth + horizontalSpacing)) / 2f // Center the generation
+        val minGen = nodesByGen.keys.minOrNull() ?: 0
+        val maxGen = nodesByGen.keys.maxOrNull() ?: 0
+        
+        val xPositions = mutableMapOf<String, Float>()
+        
+        for (gen in minGen..maxGen) {
+            val genNodes = nodesByGen[gen] ?: emptyList()
+            var currentX = 0f
             
-            memberIds.forEach { id ->
-                positions[id] = Offset(startX, startY)
-                startX += cardWidth + horizontalSpacing
+            // Sort nodes by parent X positions from previous generation to minimize crossings
+            val sortedGenNodes = genNodes.sortedBy { childId ->
+                val parentEdges = edges.filter { it.targetId == childId && it.type == RelationshipType.PARENT }
+                val parentsInPrevGen = parentEdges.filter { generations[it.subjectId] == gen - 1 }.map { it.subjectId }
+                
+                if (parentsInPrevGen.isNotEmpty()) {
+                    parentsInPrevGen.mapNotNull { xPositions[it] }.average().toFloat()
+                } else {
+                    Float.MAX_VALUE 
+                }
             }
+            
+            val placedInGen = mutableSetOf<String>()
+            
+            for (nodeId in sortedGenNodes) {
+                if (placedInGen.contains(nodeId)) continue
+                
+                // Group with spouses in the same generation
+                val spouses = spouseEdges.filter { 
+                    (it.subjectId == nodeId && genNodes.contains(it.targetId)) || 
+                    (it.targetId == nodeId && genNodes.contains(it.subjectId)) 
+                }.map { if (it.subjectId == nodeId) it.targetId else it.subjectId }
+                
+                val group = listOf(nodeId) + spouses.filter { !placedInGen.contains(it) }
+                
+                // Attempt to center below parents
+                val parentEdges = edges.filter { group.contains(it.targetId) && it.type == RelationshipType.PARENT }
+                val parentsInPrevGen = parentEdges.filter { generations[it.subjectId] == gen - 1 }.map { it.subjectId }
+                
+                var idealX = currentX
+                if (parentsInPrevGen.isNotEmpty()) {
+                    val avgParentX = parentsInPrevGen.mapNotNull { xPositions[it] }.average().toFloat()
+                    val groupWidth = group.size * (cardWidth + horizontalSpacing) - horizontalSpacing
+                    idealX = maxOf(currentX, avgParentX - groupWidth / 2f)
+                }
+                
+                // Place group
+                var tempX = idealX
+                for (memberId in group) {
+                    xPositions[memberId] = tempX
+                    placedInGen.add(memberId)
+                    tempX += cardWidth + horizontalSpacing
+                }
+                currentX = tempX
+            }
+            
+            // Center the entire generation around X=0
+            val minX = genNodes.mapNotNull { xPositions[it] }.minOrNull() ?: 0f
+            val maxX = genNodes.mapNotNull { xPositions[it] }.maxOrNull() ?: 0f
+            val genWidth = maxX - minX + cardWidth
+            val offsetX = - (genWidth / 2f) - minX
+            
+            genNodes.forEach { id ->
+                xPositions[id] = (xPositions[id] ?: 0f) + offsetX
+            }
+        }
+        
+        nodes.forEach { member ->
+            val gen = generations[member.id] ?: 0
+            val x = xPositions[member.id] ?: 0f
+            val y = gen * (cardHeight + verticalSpacing)
+            positions[member.id] = Offset(x, y)
         }
 
         return positions
