@@ -23,12 +23,15 @@ import com.vansh.familytree.domain.timeline.TimelineGenerator
 import com.vansh.familytree.data.entity.Media
 import com.vansh.familytree.data.entity.MediaType
 import com.vansh.familytree.data.local.LocalMediaManager
+import com.vansh.familytree.domain.validation.CycleDetectionValidator
+import com.vansh.familytree.domain.validation.ValidationResult
 
 @HiltViewModel
 class MemberProfileViewModel @Inject constructor(
     private val repository: FamilyTreeRepository,
     private val timelineGenerator: TimelineGenerator,
-    private val localMediaManager: LocalMediaManager
+    private val localMediaManager: LocalMediaManager,
+    private val cycleDetectionValidator: CycleDetectionValidator
 ) : ViewModel() {
 
     private val _member = MutableStateFlow<Member?>(null)
@@ -43,8 +46,15 @@ class MemberProfileViewModel @Inject constructor(
     private val _relationships = MutableStateFlow<List<Relationship>>(emptyList())
     val relationships: StateFlow<List<Relationship>> = _relationships
 
+    private val _error = MutableStateFlow<String?>(null)
+    val error: StateFlow<String?> = _error
+
     val allMembers: StateFlow<List<Member>> = repository.getAllMembers()
         .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+
+    fun clearError() {
+        _error.value = null
+    }
 
     fun loadMember(id: String) {
         viewModelScope.launch {
@@ -129,6 +139,13 @@ class MemberProfileViewModel @Inject constructor(
                 endDate = endDate,
                 location = location
             )
+            
+            val validationResult = cycleDetectionValidator.validate(relationship)
+            if (validationResult is ValidationResult.Invalid) {
+                _error.value = validationResult.reason
+                return@launch
+            }
+            
             repository.insertRelationship(relationship)
         }
     }

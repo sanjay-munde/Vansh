@@ -36,6 +36,7 @@ fun MemberProfileScreen(
     val timelineEvents by viewModel.timeline.collectAsState()
     val relationships by viewModel.relationships.collectAsState()
     val allMembers by viewModel.allMembers.collectAsState()
+    val error by viewModel.error.collectAsState()
     
     var showRelationshipDialog by remember { mutableStateOf(false) }
 
@@ -63,6 +64,19 @@ fun MemberProfileScreen(
 
     LaunchedEffect(memberId) {
         viewModel.loadMember(memberId)
+    }
+
+    error?.let { errorMessage ->
+        AlertDialog(
+            onDismissRequest = { viewModel.clearError() },
+            title = { Text("Invalid Relationship") },
+            text = { Text(errorMessage) },
+            confirmButton = {
+                TextButton(onClick = { viewModel.clearError() }) {
+                    Text("OK")
+                }
+            }
+        )
     }
 
     Scaffold(
