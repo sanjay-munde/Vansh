@@ -8,7 +8,6 @@ import android.graphics.Paint
 import android.net.Uri
 import com.vansh.familytree.data.entity.Member
 import com.vansh.familytree.data.entity.Relationship
-import com.vansh.familytree.ui.tree.TreeNode
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -16,7 +15,7 @@ object TreeExportUtils {
     
     suspend fun exportTreeToBitmap(
         context: Context,
-        nodes: List<TreeNode>,
+        nodes: List<Member>,
         edges: List<Relationship>,
         nodePositions: Map<String, androidx.compose.ui.geometry.Offset>,
         uri: Uri
@@ -104,10 +103,10 @@ object TreeExportUtils {
             
             // Draw nodes
             nodes.forEach { node ->
-                val pos = nodePositions[node.member.id] ?: return@forEach
+                val pos = nodePositions[node.id] ?: return@forEach
                 
                 // Parse custom color
-                val nodeColor = node.member.cardColor?.let { hex ->
+                val nodeColor = node.cardColor?.let { hex ->
                     try {
                         Color.parseColor(hex)
                     } catch (e: Exception) {
@@ -132,10 +131,10 @@ object TreeExportUtils {
                 // Draw text
                 val textX = pos.x + 20f
                 val textY = pos.y + 50f
-                val name = "${node.member.firstName} ${node.member.lastName}"
+                val name = "${node.firstName} ${node.lastName}"
                 canvas.drawText(name, textX, textY, textPaint)
                 
-                val status = if (node.member.isLiving) "Living" else "Deceased"
+                val status = if (node.isLiving) "Living" else "Deceased"
                 canvas.drawText(status, textX, textY + 40f, subTextPaint)
             }
             
