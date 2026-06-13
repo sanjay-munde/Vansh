@@ -34,6 +34,7 @@ fun TreeCanvas(
     nodePositions: Map<String, Offset>,
     collapsedNodeIds: Set<String>,
     highlightedNodeId: String?,
+    selectedNodeIds: Set<String> = emptySet(),
     scale: Float,
     offset: Offset,
     onScaleChange: (Float) -> Unit,
@@ -166,20 +167,32 @@ fun TreeCanvas(
             val isDimmed = highlightedNodeId != null && highlightedNodeId != member.id
             val alphaValue = if (isDimmed) 0.3f else 1.0f
 
+            val parsedColor = member.cardColor?.let { hex ->
+                try {
+                    Color(android.graphics.Color.parseColor(hex))
+                } catch (e: Exception) {
+                    null
+                }
+            } ?: cardColor
+
             // Draw Card Background
             drawRect(
-                color = cardColor,
+                color = parsedColor,
                 topLeft = pos,
                 size = Size(cardWidth, cardHeight),
                 alpha = alphaValue
             )
 
             // Draw Card Border
+            val isSelected = selectedNodeIds.contains(member.id)
+            val borderColor = if (isSelected) Color.Green else cardBorderColor
+            val borderStrokeWidth = if (isSelected) 6f else 2f
+            
             drawRect(
-                color = cardBorderColor,
+                color = borderColor,
                 topLeft = pos,
                 size = Size(cardWidth, cardHeight),
-                style = Stroke(width = 2f),
+                style = Stroke(width = borderStrokeWidth),
                 alpha = alphaValue
             )
 

@@ -35,7 +35,10 @@ data class AnalyticsState(
     val maxGenerationDepth: Int = 0,
     val longestLivingMemberName: String? = null,
     val longestLivingAge: Int = 0,
+    val oldestLivingMemberName: String? = null,
+    val oldestLivingAge: Int = 0,
     val mostCommonBirthMonth: String? = null,
+    val mostCommonBirthplace: String? = null,
     val marriageCount: Int = 0,
     val parentChildLinkCount: Int = 0
 )
@@ -66,7 +69,12 @@ class AnalyticsViewModel @Inject constructor(
                 
                 var maxAge = 0
                 var longestLivingName: String? = null
+                
+                var maxLivingAge = 0
+                var oldestLivingName: String? = null
+                
                 val birthMonths = mutableMapOf<java.time.Month, Int>()
+                val birthPlaces = mutableMapOf<String, Int>()
 
                 members.forEach { m ->
                     if (m.dateOfBirth != null) {
@@ -89,10 +97,20 @@ class AnalyticsViewModel @Inject constructor(
                             maxAge = age
                             longestLivingName = "${m.firstName} ${m.lastName}"
                         }
+                        
+                        if (m.isLiving && age > maxLivingAge) {
+                            maxLivingAge = age
+                            oldestLivingName = "${m.firstName} ${m.lastName}"
+                        }
+                    }
+                    if (!m.placeOfBirth.isNullOrBlank()) {
+                        val place = m.placeOfBirth.trim()
+                        birthPlaces[place] = birthPlaces.getOrDefault(place, 0) + 1
                     }
                 }
                 val avgAge = if (ageCount > 0) totalAge.toDouble() / ageCount else 0.0
                 val mostCommonMonth = birthMonths.maxByOrNull { it.value }?.key?.name?.lowercase()?.replaceFirstChar { it.uppercase() }
+                val mostCommonPlace = birthPlaces.maxByOrNull { it.value }?.key
 
                 val marriages = edges.count { it.type == RelationshipType.SPOUSE }
                 val parentChildLinks = edges.count { it.type == RelationshipType.PARENT || it.type == RelationshipType.CHILD }
@@ -129,7 +147,10 @@ class AnalyticsViewModel @Inject constructor(
                     maxGenerationDepth = maxDepth,
                     longestLivingMemberName = longestLivingName,
                     longestLivingAge = maxAge,
+                    oldestLivingMemberName = oldestLivingName,
+                    oldestLivingAge = maxLivingAge,
                     mostCommonBirthMonth = mostCommonMonth,
+                    mostCommonBirthplace = mostCommonPlace,
                     marriageCount = marriages,
                     parentChildLinkCount = parentChildLinks
                 )
@@ -193,10 +214,16 @@ fun AnalyticsScreen(
                     Text("Fun Facts", style = MaterialTheme.typography.titleMedium)
                     Divider()
                     if (state.longestLivingMemberName != null) {
-                        Text("Longest Living: ${state.longestLivingMemberName} (${state.longestLivingAge} years)", color = MaterialTheme.colorScheme.primary)
+                        Text("Longest Lived: ${state.longestLivingMemberName} (${state.longestLivingAge} years)", color = MaterialTheme.colorScheme.primary)
+                    }
+                    if (state.oldestLivingMemberName != null) {
+                        Text("Oldest Living: ${state.oldestLivingMemberName} (${state.oldestLivingAge} years)", color = MaterialTheme.colorScheme.secondary)
                     }
                     if (state.mostCommonBirthMonth != null) {
                         Text("Most Common Birth Month: ${state.mostCommonBirthMonth}")
+                    }
+                    if (state.mostCommonBirthplace != null) {
+                        Text("Most Common Birthplace: ${state.mostCommonBirthplace}")
                     }
                     Text("Marriages: ${state.marriageCount}")
                     Text("Parent-Child Links: ${state.parentChildLinkCount}")

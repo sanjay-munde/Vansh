@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -30,6 +31,34 @@ class MemberViewModel @Inject constructor(
 
     fun updateFilterCriteria(criteria: FilterCriteria) {
         _filterCriteria.value = criteria
+    }
+
+    private val _duplicateWarning = MutableStateFlow<String?>(null)
+    val duplicateWarning: StateFlow<String?> = _duplicateWarning
+
+    fun clearDuplicateWarning() {
+        _duplicateWarning.value = null
+    }
+
+    fun saveMemberWithValidation(member: Member, ignoreWarning: Boolean = false, onSuccess: () -> Unit) {
+        viewModelScope.launch {
+            if (!ignoreWarning) {
+                val all = repository.getAllMembers().firstOrNull() ?: emptyList()
+                val isDuplicate = all.any { 
+                    it.id != member.id && 
+                    it.firstName.equals(member.firstName, ignoreCase = true) && 
+                    it.lastName.equals(member.lastName, ignoreCase = true) &&
+                    it.dateOfBirth == member.dateOfBirth
+                }
+                
+                if (isDuplicate) {
+                    _duplicateWarning.value = "A member named ${member.firstName} ${member.lastName} with the same birth details already exists. Are you sure you want to save?"
+                    return@launch
+                }
+            }
+            repository.insertMember(member)
+            onSuccess()
+        }
     }
 
     fun saveMember(member: Member) {

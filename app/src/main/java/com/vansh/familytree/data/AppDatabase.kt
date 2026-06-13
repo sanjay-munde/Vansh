@@ -11,7 +11,7 @@ import com.vansh.familytree.data.entity.Relationship
 
 @Database(
     entities = [Member::class, Relationship::class, Media::class],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {

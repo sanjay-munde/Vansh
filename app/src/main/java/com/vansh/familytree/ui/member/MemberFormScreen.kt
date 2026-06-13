@@ -35,6 +35,46 @@ fun MemberFormScreen(
     var placeOfBirth by remember { mutableStateOf("") }
     var dateOfDeath by remember { mutableStateOf<Long?>(null) }
     var biography by remember { mutableStateOf("") }
+    var cardColor by remember { mutableStateOf<String?>(null) }
+
+    val duplicateWarning by viewModel.duplicateWarning.collectAsState()
+    
+    duplicateWarning?.let { warning ->
+        AlertDialog(
+            onDismissRequest = { viewModel.clearDuplicateWarning() },
+            title = { Text("Potential Duplicate") },
+            text = { Text(warning) },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.clearDuplicateWarning()
+                    val newMember = Member(
+                        id = memberId ?: java.util.UUID.randomUUID().toString(),
+                        firstName = firstName.trim(),
+                        middleName = middleName.trim().ifEmpty { null },
+                        lastName = lastName.trim(),
+                        nickname = nickname.trim().ifEmpty { null },
+                        gender = gender,
+                        isLiving = isLiving,
+                        dateOfBirth = dateOfBirth,
+                        placeOfBirth = placeOfBirth.trim().ifEmpty { null },
+                        dateOfDeath = if (!isLiving) dateOfDeath else null,
+                        biography = biography.trim().ifEmpty { null },
+                        cardColor = cardColor
+                    )
+                    viewModel.saveMemberWithValidation(newMember, ignoreWarning = true) {
+                        onNavigateBack()
+                    }
+                }) {
+                    Text("Save Anyway")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { viewModel.clearDuplicateWarning() }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
 
     Scaffold(
         topBar = {
@@ -133,6 +173,7 @@ fun MemberFormScreen(
                 onClick = {
                     if (firstName.isNotBlank() && lastName.isNotBlank()) {
                         val newMember = Member(
+                            id = memberId ?: java.util.UUID.randomUUID().toString(),
                             firstName = firstName.trim(),
                             middleName = middleName.trim().ifEmpty { null },
                             lastName = lastName.trim(),
@@ -142,10 +183,12 @@ fun MemberFormScreen(
                             dateOfBirth = dateOfBirth,
                             placeOfBirth = placeOfBirth.trim().ifEmpty { null },
                             dateOfDeath = if (!isLiving) dateOfDeath else null,
-                            biography = biography.trim().ifEmpty { null }
+                            biography = biography.trim().ifEmpty { null },
+                            cardColor = cardColor
                         )
-                        viewModel.saveMember(newMember)
-                        onNavigateBack()
+                        viewModel.saveMemberWithValidation(newMember) {
+                            onNavigateBack()
+                        }
                     }
                 },
                 modifier = Modifier.fillMaxWidth()

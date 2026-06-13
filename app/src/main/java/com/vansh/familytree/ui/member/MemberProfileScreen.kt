@@ -149,6 +149,10 @@ fun MemberProfileScreen(
                         val dateFormat = java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.getDefault())
                         if (m.dateOfBirth != null) {
                             Text("Date of Birth: ${dateFormat.format(java.util.Date(m.dateOfBirth))}", style = MaterialTheme.typography.bodyMedium)
+                            
+                            val endMillis = if (!m.isLiving && m.dateOfDeath != null) m.dateOfDeath else System.currentTimeMillis()
+                            val years = (endMillis - m.dateOfBirth) / (1000L * 60 * 60 * 24 * 365.25)
+                            Text("Age: ${years.toInt()} years", style = MaterialTheme.typography.bodyMedium)
                         }
                         if (!m.placeOfBirth.isNullOrBlank()) {
                             Text("Place of Birth: ${m.placeOfBirth}", style = MaterialTheme.typography.bodyMedium)
@@ -165,12 +169,38 @@ fun MemberProfileScreen(
                 }
                 
                 Text(stringResource(R.string.media_documents), style = MaterialTheme.typography.titleLarge)
-                if (mediaList.filter { !it.isProfilePhoto }.isEmpty()) {
+                val otherMedia = mediaList.filter { !it.isProfilePhoto }
+                if (otherMedia.isEmpty()) {
                     Text(stringResource(R.string.no_media_attached), style = MaterialTheme.typography.bodyMedium)
                 } else {
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        mediaList.filter { !it.isProfilePhoto }.forEach { media ->
-                            Text("- ${media.type.name}: ${stringResource(R.string.attached_file)}")
+                    val photos = otherMedia.filter { it.type.name == "PHOTO" || it.type.name == "IMAGE" }
+                    val documents = otherMedia.filter { it.type.name != "PHOTO" && it.type.name != "IMAGE" }
+                    
+                    if (photos.isNotEmpty()) {
+                        Text("Photo Gallery", style = MaterialTheme.typography.titleMedium)
+                        androidx.compose.foundation.lazy.grid.LazyVerticalGrid(
+                            columns = androidx.compose.foundation.lazy.grid.GridCells.Fixed(3),
+                            modifier = Modifier.height(120.dp).fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            items(photos.size) { index ->
+                                AsyncImage(
+                                    model = photos[index].uri,
+                                    contentDescription = "Gallery Photo",
+                                    modifier = Modifier.aspectRatio(1f).clip(androidx.compose.foundation.shape.RoundedCornerShape(8.dp)),
+                                    contentScale = ContentScale.Crop
+                                )
+                            }
+                        }
+                    }
+                    if (documents.isNotEmpty()) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text("Documents", style = MaterialTheme.typography.titleMedium)
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            documents.forEach { media ->
+                                Text("- ${media.type.name}: ${stringResource(R.string.attached_file)}")
+                            }
                         }
                     }
                 }

@@ -17,7 +17,8 @@ data class Member(
     val placeOfBirth: String? = null,
     val isLiving: Boolean = true,
     val dateOfDeath: Long? = null,
-    val biography: String? = null
+    val biography: String? = null,
+    val cardColor: String? = null
 )
 
 enum class Gender {

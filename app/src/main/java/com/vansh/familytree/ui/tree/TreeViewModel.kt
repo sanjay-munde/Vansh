@@ -17,6 +17,10 @@ enum class ViewMode {
     FULL_TREE, ANCESTOR, DESCENDANT
 }
 
+enum class AutoColorMode {
+    GENDER, STATUS, CLEAR
+}
+
 @HiltViewModel
 class TreeViewModel @Inject constructor(
     private val repository: FamilyTreeRepository
@@ -42,6 +46,12 @@ class TreeViewModel @Inject constructor(
 
     private val _viewMode = MutableStateFlow<ViewMode>(ViewMode.FULL_TREE)
     val viewMode: StateFlow<ViewMode> = _viewMode
+
+    private val _selectionMode = MutableStateFlow(false)
+    val selectionMode: StateFlow<Boolean> = _selectionMode
+
+    private val _selectedNodeIds = MutableStateFlow<Set<String>>(emptySet())
+    val selectedNodeIds: StateFlow<Set<String>> = _selectedNodeIds
 
     private val layoutEngine = TreeLayoutEngine()
 
@@ -99,5 +109,68 @@ class TreeViewModel @Inject constructor(
             current.add(nodeId)
         }
         _collapsedNodeIds.value = current
+    }
+
+    fun autoColorNodes(mode: AutoColorMode) {
+        viewModelScope.launch {
+            val nodes = _graphNodes.value
+            nodes.forEach { member ->
+                val colorHex = when (mode) {
+                    AutoColorMode.GENDER -> {
+                        when (member.gender) {
+                            com.vansh.familytree.data.entity.Gender.MALE -> "#ADD8E6" // Light Blue
+                            com.vansh.familytree.data.entity.Gender.FEMALE -> "#FFB6C1" // Light Pink
+                            com.vansh.familytree.data.entity.Gender.OTHER -> "#D3D3D3" // Light Gray
+                        }
+                    }
+                    AutoColorMode.STATUS -> {
+                        if (member.isLiving) "#90EE90" else "#D3D3D3" // Light Green vs Light Gray
+                    }
+                    AutoColorMode.CLEAR -> null
+                }
+                repository.insertMember(member.copy(cardColor = colorHex))
+            }
+        }
+    }
+
+    fun toggleSelectionMode() {
+        val current = _selectionMode.value
+        _selectionMode.value = !current
+        if (current) {
+            _selectedNodeIds.value = emptySet()
+        }
+    }
+
+    fun toggleNodeSelection(nodeId: String) {
+        if (!_selectionMode.value) return
+        val current = _selectedNodeIds.value.toMutableSet()
+        if (current.contains(nodeId)) {
+            current.remove(nodeId)
+        } else {
+            current.add(nodeId)
+        }
+        _selectedNodeIds.value = current
+    }
+
+    fun bulkColorSelectedNodes(colorHex: String?) {
+        viewModelScope.launch {
+            val nodesToUpdate = _graphNodes.value.filter { _selectedNodeIds.value.contains(it.id) }
+            nodesToUpdate.forEach { member ->
+                repository.insertMember(member.copy(cardColor = colorHex))
+            }
+            _selectedNodeIds.value = emptySet()
+            _selectionMode.value = false
+        }
+    }
+
+    fun bulkDeleteSelectedNodes() {
+        viewModelScope.launch {
+            val nodesToDelete = _graphNodes.value.filter { _selectedNodeIds.value.contains(it.id) }
+            nodesToDelete.forEach { member ->
+                repository.deleteMember(member)
+            }
+            _selectedNodeIds.value = emptySet()
+            _selectionMode.value = false
+        }
     }
 }

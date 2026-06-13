@@ -57,7 +57,7 @@ fun SettingsScreen(
     val message by viewModel.message.collectAsState()
 
     val exportLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.CreateDocument("application/json"),
+        contract = ActivityResultContracts.CreateDocument("application/zip"),
         onResult = { uri ->
             uri?.let { viewModel.exportBackup(it) }
         }
@@ -100,20 +100,20 @@ fun SettingsScreen(
             }
 
             Text("Data Backup", style = MaterialTheme.typography.titleLarge)
-            Text("Export your family tree data to a JSON file to keep it safe, or import an existing backup.", style = MaterialTheme.typography.bodyMedium)
+            Text("Export your family tree data to a ZIP file to keep it safe (includes all photos and documents), or import an existing backup.", style = MaterialTheme.typography.bodyMedium)
 
             Button(
-                onClick = { exportLauncher.launch("family_tree_backup.json") },
+                onClick = { exportLauncher.launch("family_tree_backup.zip") },
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Export Backup (JSON)")
+                Text("Export Backup (ZIP)")
             }
 
             Button(
-                onClick = { importLauncher.launch(arrayOf("application/json", "*/*")) },
+                onClick = { importLauncher.launch(arrayOf("application/zip", "*/*")) },
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Import Backup (JSON)")
+                Text("Import Backup (ZIP)")
             }
 
             Spacer(modifier = Modifier.height(16.dp))
