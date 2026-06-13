@@ -60,25 +60,96 @@ class KinshipCalculator @Inject constructor(
     }
 
     private fun mapPathToKinship(path: List<RelationshipEdge>): String {
-        // Simplified Path matching logic
-        val pathString = path.joinToString("-") { it.name }
+        if (path.isEmpty()) return "Self"
+        if (path.size == 1 && path[0] == RelationshipEdge.SPOUSE) return "Spouse"
+
+        var hasSpousePrefix = false
+        var hasSpouseSuffix = false
         
-        return when (pathString) {
-            "PARENT" -> "Parent"
-            "CHILD" -> "Child"
-            "SPOUSE" -> "Spouse"
-            "PARENT-PARENT" -> "Grandparent"
-            "CHILD-CHILD" -> "Grandchild"
-            "PARENT-CHILD" -> "Sibling"
-            "PARENT-PARENT-CHILD" -> "Uncle / Aunt"
-            "PARENT-CHILD-CHILD" -> "Nephew / Niece"
-            "PARENT-PARENT-CHILD-CHILD" -> "First Cousin"
-            "SPOUSE-PARENT" -> "Parent-in-Law"
-            "CHILD-SPOUSE" -> "Child-in-Law"
-            "PARENT-CHILD-SPOUSE" -> "Sibling-in-Law" // Spouse of sibling
-            "SPOUSE-PARENT-CHILD" -> "Sibling-in-Law" // Sibling of spouse
-            else -> "Relative ($pathString)"
+        val bloodPath = path.toMutableList()
+        if (bloodPath.first() == RelationshipEdge.SPOUSE) {
+            hasSpousePrefix = true
+            bloodPath.removeFirst()
+        } else if (bloodPath.last() == RelationshipEdge.SPOUSE) {
+            hasSpouseSuffix = true
+            bloodPath.removeLast()
         }
+        
+        if (bloodPath.contains(RelationshipEdge.SPOUSE)) {
+            return "Relative by Marriage"
+        }
+
+        var up = 0
+        var down = 0
+        var phase = "UP"
+        
+        for (edge in bloodPath) {
+            if (edge == RelationshipEdge.PARENT) {
+                if (phase == "DOWN") return "Relative (Complex lineage)"
+                up++
+            } else if (edge == RelationshipEdge.CHILD) {
+                phase = "DOWN"
+                down++
+            }
+        }
+        
+        val baseRelationship = getBloodRelationship(up, down)
+        
+        if (hasSpousePrefix || hasSpouseSuffix) {
+            if (baseRelationship == "Parent") return "Parent-in-Law"
+            if (baseRelationship == "Child") return "Child-in-Law"
+            if (baseRelationship == "Sibling") return "Sibling-in-Law"
+            return "$baseRelationship (by marriage)"
+        }
+        
+        return baseRelationship
+    }
+
+    private fun getBloodRelationship(up: Int, down: Int): String {
+        if (up == 0) {
+            if (down == 0) return "Self"
+            if (down == 1) return "Child"
+            if (down == 2) return "Grandchild"
+            return "Great ".repeat(down - 2) + "Grandchild"
+        }
+        if (down == 0) {
+            if (up == 1) return "Parent"
+            if (up == 2) return "Grandparent"
+            return "Great ".repeat(up - 2) + "Grandparent"
+        }
+        if (up == 1 && down == 1) return "Sibling"
+        if (up == 1) {
+            if (down == 2) return "Nephew / Niece"
+            if (down == 3) return "Grandnephew / Grandniece"
+            return "Great ".repeat(down - 3) + "Grandnephew / Grandniece"
+        }
+        if (down == 1) {
+            if (up == 2) return "Uncle / Aunt"
+            if (up == 3) return "Great Uncle / Aunt"
+            return "Great ".repeat(up - 3) + "Granduncle / Grandaunt"
+        }
+        
+        val cousinDegree = minOf(up, down) - 1
+        val removed = kotlin.math.abs(up - down)
+        
+        val degreeStr = when (cousinDegree) {
+            1 -> "First"
+            2 -> "Second"
+            3 -> "Third"
+            4 -> "Fourth"
+            5 -> "Fifth"
+            else -> "${cousinDegree}th"
+        }
+        
+        val removedStr = when (removed) {
+            0 -> ""
+            1 -> " Once Removed"
+            2 -> " Twice Removed"
+            3 -> " Thrice Removed"
+            else -> " ${removed}x Removed"
+        }
+        
+        return "$degreeStr Cousin$removedStr"
     }
 }
 

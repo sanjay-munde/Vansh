@@ -18,6 +18,8 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.os.LocaleListCompat
 
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
@@ -112,6 +114,47 @@ fun SettingsScreen(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text("Import Backup (JSON)")
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Text("Language", style = MaterialTheme.typography.titleLarge)
+            Text("Switch between English and Marathi.", style = MaterialTheme.typography.bodyMedium)
+
+            val currentLang = AppCompatDelegate.getApplicationLocales().toLanguageTags()
+            var expanded by remember { mutableStateOf(false) }
+
+            ExposedDropdownMenuBox(
+                expanded = expanded,
+                onExpandedChange = { expanded = it }
+            ) {
+                OutlinedTextField(
+                    value = if (currentLang == "mr") "मराठी (Marathi)" else "English",
+                    onValueChange = {},
+                    readOnly = true,
+                    modifier = Modifier.menuAnchor().fillMaxWidth(),
+                    label = { Text("App Language") },
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) }
+                )
+                ExposedDropdownMenu(
+                    expanded = expanded,
+                    onDismissRequest = { expanded = false }
+                ) {
+                    DropdownMenuItem(
+                        text = { Text("English") },
+                        onClick = {
+                            AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("en"))
+                            expanded = false
+                        }
+                    )
+                    DropdownMenuItem(
+                        text = { Text("मराठी (Marathi)") },
+                        onClick = {
+                            AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("mr"))
+                            expanded = false
+                        }
+                    )
+                }
             }
         }
     }
