@@ -19,8 +19,10 @@ import androidx.core.os.LocaleListCompat
 import com.vansh.familytree.R
 import com.vansh.familytree.data.entity.Member
 import com.vansh.familytree.data.entity.Gender
+import androidx.compose.material.icons.Icons
 
 @OptIn(ExperimentalMaterial3Api::class)
+@Composable
 fun MemberListScreen(
     onNavigateToMemberForm: (String?) -> Unit,
     onNavigateToMemberProfile: (String) -> Unit,
