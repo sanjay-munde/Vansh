@@ -65,7 +65,7 @@ fun MegaTreeScreen(
                                 menuExpanded = false
                             }
                         )
-                        HorizontalDivider()
+                        Divider()
                         DropdownMenuItem(
                             text = { Text("Full Tree") },
                             onClick = {
