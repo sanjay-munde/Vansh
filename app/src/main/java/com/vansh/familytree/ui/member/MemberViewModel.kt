@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -60,6 +61,8 @@ class MemberViewModel @Inject constructor(
             onSuccess()
         }
     }
+
+    fun getMemberById(id: String): Flow<Member?> = repository.getMemberById(id)
 
     fun saveMember(member: Member) {
         viewModelScope.launch {

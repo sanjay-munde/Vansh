@@ -1,165 +1,30 @@
 package com.vansh.familytree.ui.analytics
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import com.vansh.familytree.R
-import com.vansh.familytree.data.entity.Gender
-import com.vansh.familytree.data.entity.RelationshipType
-import com.vansh.familytree.data.repository.FamilyTreeRepository
-import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.launch
-import java.time.LocalDate
-import javax.inject.Inject
-
-data class AnalyticsState(
-    val totalMembers: Int = 0,
-    val livingMembers: Int = 0,
-    val deceasedMembers: Int = 0,
-    val maleMembers: Int = 0,
-    val femaleMembers: Int = 0,
-    val averageAge: Double = 0.0,
-    val maxGenerationDepth: Int = 0,
-    val longestLivingMemberName: String? = null,
-    val longestLivingAge: Int = 0,
-    val oldestLivingMemberName: String? = null,
-    val oldestLivingAge: Int = 0,
-    val mostCommonBirthMonth: String? = null,
-    val mostCommonBirthplace: String? = null,
-    val marriageCount: Int = 0,
-    val parentChildLinkCount: Int = 0
-)
-
-@HiltViewModel
-class AnalyticsViewModel @Inject constructor(
-    private val repository: FamilyTreeRepository
-) : ViewModel() {
-
-    private val _state = MutableStateFlow(AnalyticsState())
-    val state: StateFlow<AnalyticsState> = _state
-
-    init {
-        viewModelScope.launch {
-            combine(
-                repository.getAllMembers(),
-                repository.getAllRelationships()
-            ) { members, edges ->
-                val total = members.size
-                val living = members.count { it.isLiving }
-                val deceased = total - living
-                val males = members.count { it.gender == Gender.MALE }
-                val females = members.count { it.gender == Gender.FEMALE }
-                
-                var totalAge = 0
-                var ageCount = 0
-                val currentYear = LocalDate.now().year
-                
-                var maxAge = 0
-                var longestLivingName: String? = null
-                
-                var maxLivingAge = 0
-                var oldestLivingName: String? = null
-                
-                val birthMonths = mutableMapOf<java.time.Month, Int>()
-                val birthPlaces = mutableMapOf<String, Int>()
-
-                members.forEach { m ->
-                    if (m.dateOfBirth != null) {
-                        val birthDate = java.time.Instant.ofEpochMilli(m.dateOfBirth).atZone(java.time.ZoneId.systemDefault())
-                        val birthYear = birthDate.year
-                        val birthMonth = birthDate.month
-                        
-                        birthMonths[birthMonth] = birthMonths.getOrDefault(birthMonth, 0) + 1
-                        
-                        val deathYear = if (!m.isLiving && m.dateOfDeath != null) {
-                            java.time.Instant.ofEpochMilli(m.dateOfDeath).atZone(java.time.ZoneId.systemDefault()).year
-                        } else {
-                            currentYear
-                        }
-                        val age = deathYear - birthYear
-                        totalAge += age
-                        ageCount++
-                        
-                        if (age > maxAge) {
-                            maxAge = age
-                            longestLivingName = "${m.firstName} ${m.lastName}"
-                        }
-                        
-                        if (m.isLiving && age > maxLivingAge) {
-                            maxLivingAge = age
-                            oldestLivingName = "${m.firstName} ${m.lastName}"
-                        }
-                    }
-                    if (!m.placeOfBirth.isNullOrBlank()) {
-                        val place = m.placeOfBirth.trim()
-                        birthPlaces[place] = birthPlaces.getOrDefault(place, 0) + 1
-                    }
-                }
-                val avgAge = if (ageCount > 0) totalAge.toDouble() / ageCount else 0.0
-                val mostCommonMonth = birthMonths.maxByOrNull { it.value }?.key?.name?.lowercase()?.replaceFirstChar { it.uppercase() }
-                val mostCommonPlace = birthPlaces.maxByOrNull { it.value }?.key
-
-                val marriages = edges.count { it.type == RelationshipType.SPOUSE }
-                val parentChildLinks = edges.count { it.type == RelationshipType.PARENT || it.type == RelationshipType.CHILD }
-
-                val childEdges = edges.filter { it.type == RelationshipType.PARENT }
-                val parentToChildren = mutableMapOf<String, MutableList<String>>()
-                childEdges.forEach { edge ->
-                    parentToChildren.getOrPut(edge.subjectId) { mutableListOf() }.add(edge.targetId)
-                }
-                
-                val allChildren = childEdges.map { it.targetId }.toSet()
-                val roots = members.map { it.id }.filter { !allChildren.contains(it) }
-                
-                var maxDepth = 0
-                fun dfs(nodeId: String, depth: Int) {
-                    if (depth > maxDepth) maxDepth = depth
-                    val children = parentToChildren[nodeId] ?: emptyList()
-                    for (child in children) {
-                        dfs(child, depth + 1)
-                    }
-                }
-                
-                for (root in roots) {
-                    dfs(root, 1)
-                }
-
-                AnalyticsState(
-                    totalMembers = total,
-                    livingMembers = living,
-                    deceasedMembers = deceased,
-                    maleMembers = males,
-                    femaleMembers = females,
-                    averageAge = avgAge,
-                    maxGenerationDepth = maxDepth,
-                    longestLivingMemberName = longestLivingName,
-                    longestLivingAge = maxAge,
-                    oldestLivingMemberName = oldestLivingName,
-                    oldestLivingAge = maxLivingAge,
-                    mostCommonBirthMonth = mostCommonMonth,
-                    mostCommonBirthplace = mostCommonPlace,
-                    marriageCount = marriages,
-                    parentChildLinkCount = parentChildLinks
-                )
-            }.collect {
-                _state.value = it
-            }
-        }
-    }
-}
+import com.vansh.familytree.ui.theme.LivingAccent
+import com.vansh.familytree.ui.theme.DeceasedAccent
+import com.vansh.familytree.ui.theme.MaleAccent
+import com.vansh.familytree.ui.theme.FemaleAccent
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -172,12 +37,17 @@ fun AnalyticsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.family_analytics)) },
+                title = { Text(stringResource(R.string.family_analytics), style = MaterialTheme.typography.titleLarge) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
+                )
             )
         }
     ) { padding ->
@@ -185,50 +55,284 @@ fun AnalyticsScreen(
             modifier = Modifier
                 .padding(padding)
                 .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
+                .verticalScroll(rememberScrollState())
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Card(modifier = Modifier.fillMaxWidth()) {
-                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(stringResource(R.string.demographics), style = MaterialTheme.typography.titleMedium)
-                    Divider()
-                    Text("${stringResource(R.string.total_members)}: ${state.totalMembers}")
-                    Text("${stringResource(R.string.living)}: ${state.livingMembers}", color = MaterialTheme.colorScheme.primary)
-                    Text("${stringResource(R.string.deceased)}: ${state.deceasedMembers}", color = MaterialTheme.colorScheme.error)
-                    Text("${stringResource(R.string.male)}: ${state.maleMembers}")
-                    Text("${stringResource(R.string.female)}: ${state.femaleMembers}")
-                }
-            }
             
-            Card(modifier = Modifier.fillMaxWidth()) {
-                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(stringResource(R.string.insights), style = MaterialTheme.typography.titleMedium)
-                    Divider()
-                    Text("${stringResource(R.string.average_age)}: ${String.format("%.1f", state.averageAge)} ${stringResource(R.string.years)}")
-                    Text("${stringResource(R.string.max_generation_depth)}: ${state.maxGenerationDepth} ${stringResource(R.string.generations)}")
+            // Hero Total Members Card
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary),
+                shape = RoundedCornerShape(16.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            ) {
+                Column(
+                    modifier = Modifier.padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = stringResource(R.string.total_members),
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f)
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = state.totalMembers.toString(),
+                        style = MaterialTheme.typography.displayLarge.copy(fontSize = 64.sp),
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
                 }
             }
 
-            Card(modifier = Modifier.fillMaxWidth()) {
-                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("Fun Facts", style = MaterialTheme.typography.titleMedium)
-                    Divider()
+            // Grid of Stats Cards
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                // Living vs Deceased Card
+                Card(
+                    modifier = Modifier.weight(1f),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    shape = RoundedCornerShape(16.dp),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Text(
+                            text = "Vital Status",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        
+                        Divider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
+                        
+                        StatItem(
+                            label = stringResource(R.string.living),
+                            value = state.livingMembers.toString(),
+                            color = LivingAccent
+                        )
+                        
+                        StatItem(
+                            label = stringResource(R.string.deceased),
+                            value = state.deceasedMembers.toString(),
+                            color = DeceasedAccent
+                        )
+
+                        // Visual horizontal ratio bar
+                        if (state.totalMembers > 0) {
+                            val livingRatio: Float = state.livingMembers.toFloat() / state.totalMembers.toFloat()
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(8.dp)
+                                    .clip(RoundedCornerShape(4.dp))
+                                    .background(DeceasedAccent.copy(alpha = 0.2f))
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxHeight()
+                                        .weight(livingRatio.coerceAtLeast(0.01f))
+                                        .background(LivingAccent)
+                                )
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxHeight()
+                                        .weight((1f - livingRatio).coerceAtLeast(0.01f))
+                                        .background(DeceasedAccent)
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // Gender Demographics Card
+                Card(
+                    modifier = Modifier.weight(1f),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    shape = RoundedCornerShape(16.dp),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Text(
+                            text = stringResource(R.string.gender),
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        
+                        Divider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
+                        
+                        StatItem(
+                            label = stringResource(R.string.male),
+                            value = state.maleMembers.toString(),
+                            color = MaleAccent
+                        )
+                        
+                        StatItem(
+                            label = stringResource(R.string.female),
+                            value = state.femaleMembers.toString(),
+                            color = FemaleAccent
+                        )
+
+                        // Gender ratio bar
+                        if (state.totalMembers > 0) {
+                            val maleRatio: Float = state.maleMembers.toFloat() / state.totalMembers.toFloat()
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(8.dp)
+                                    .clip(RoundedCornerShape(4.dp))
+                                    .background(Color.LightGray.copy(alpha = 0.3f))
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxHeight()
+                                        .weight(maleRatio.coerceAtLeast(0.01f))
+                                        .background(MaleAccent)
+                                )
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxHeight()
+                                        .weight((1f - maleRatio).coerceAtLeast(0.01f))
+                                        .background(FemaleAccent)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Insights Card
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                shape = RoundedCornerShape(16.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Text(
+                        text = stringResource(R.string.insights),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Divider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
+                    
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column {
+                            Text(
+                                stringResource(R.string.average_age),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = Color.Gray
+                            )
+                            Text(
+                                text = "${String.format("%.1f", state.averageAge)} ${stringResource(R.string.years)}",
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                        
+                        Column(horizontalAlignment = Alignment.End) {
+                            Text(
+                                stringResource(R.string.max_generation_depth),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = Color.Gray
+                            )
+                            Text(
+                                text = "${state.maxGenerationDepth} ${stringResource(R.string.generations)}",
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Fun Facts Card
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                shape = RoundedCornerShape(16.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Text(
+                        text = "Fun Facts & Historical Archives",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Divider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
+                    
                     if (state.longestLivingMemberName != null) {
-                        Text("Longest Lived: ${state.longestLivingMemberName} (${state.longestLivingAge} years)", color = MaterialTheme.colorScheme.primary)
+                        ProfileFactRow("Longest Lived", "${state.longestLivingMemberName} (${state.longestLivingAge} yrs)")
                     }
                     if (state.oldestLivingMemberName != null) {
-                        Text("Oldest Living: ${state.oldestLivingMemberName} (${state.oldestLivingAge} years)", color = MaterialTheme.colorScheme.secondary)
-                    }
-                    if (state.mostCommonBirthMonth != null) {
-                        Text("Most Common Birth Month: ${state.mostCommonBirthMonth}")
+                        ProfileFactRow("Oldest Living", "${state.oldestLivingMemberName} (${state.oldestLivingAge} yrs)")
                     }
                     if (state.mostCommonBirthplace != null) {
-                        Text("Most Common Birthplace: ${state.mostCommonBirthplace}")
+                        ProfileFactRow("Common Birthplace", state.mostCommonBirthplace ?: "N/A")
                     }
-                    Text("Marriages: ${state.marriageCount}")
-                    Text("Parent-Child Links: ${state.parentChildLinkCount}")
+                    if (state.mostCommonBirthMonth != null) {
+                        ProfileFactRow("Common Birth Month", state.mostCommonBirthMonth ?: "N/A")
+                    }
+                    
+                    ProfileFactRow("Marriages Count", state.marriageCount.toString())
+                    ProfileFactRow("Parent-Child Links", state.parentChildLinkCount.toString())
                 }
             }
         }
+    }
+}
+
+@Composable
+fun StatItem(label: String, value: String, color: Color) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                modifier = Modifier
+                    .size(10.dp)
+                    .clip(RoundedCornerShape(2.dp))
+                    .background(color)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(label, style = MaterialTheme.typography.bodyMedium, color = Color.Gray)
+        }
+        Text(value, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+    }
+}
+
+@Composable
+fun ProfileFactRow(label: String, value: String) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(label, style = MaterialTheme.typography.bodyMedium, color = Color.Gray)
+        Text(value, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
     }
 }

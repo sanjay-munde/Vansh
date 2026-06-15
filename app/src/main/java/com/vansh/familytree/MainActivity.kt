@@ -14,12 +14,14 @@ import dagger.hilt.android.AndroidEntryPoint
 
 import com.vansh.familytree.ui.AppNavigation
 
+import com.vansh.familytree.ui.theme.VanshTheme
+
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            MaterialTheme {
+            VanshTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
