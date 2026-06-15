@@ -29,9 +29,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.ui.platform.LocalContext
 import kotlinx.coroutines.launch
 import com.vansh.familytree.domain.export.TreeExportUtils
+import com.vansh.familytree.ui.theme.*
+import androidx.compose.ui.unit.sp
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -44,6 +47,7 @@ fun MegaTreeScreen(
     val nodes by viewModel.graphNodes.collectAsState()
     val edges by viewModel.graphEdges.collectAsState()
     val nodePositions by viewModel.nodePositions.collectAsState()
+    val profilePhotos by viewModel.profilePhotos.collectAsState()
     val collapsedNodeIds by viewModel.collapsedNodeIds.collectAsState()
     val highlightedNodeId by viewModel.highlightedNodeId.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
@@ -78,7 +82,7 @@ fun MegaTreeScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Mega Family Tree", style = MaterialTheme.typography.titleLarge) },
+                title = { Text("Mega Family Tree", style = MaterialTheme.typography.titleLarge.copy(fontFamily = SerifFontFamily, fontWeight = FontWeight.Bold)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.Filled.ArrowBack, contentDescription = "Back")
@@ -211,6 +215,8 @@ fun MegaTreeScreen(
                     collapsedNodeIds = collapsedNodeIds,
                     highlightedNodeId = highlightedNodeId,
                     selectedNodeIds = selectedNodeIds,
+                    profilePhotos = profilePhotos,
+                    searchQuery = searchQuery,
                     scale = scale,
                     offset = offset,
                     onScaleChange = { scale = it },
@@ -234,8 +240,91 @@ fun MegaTreeScreen(
                     },
                     modifier = Modifier.fillMaxSize()
                 )
+
+                // COLLAPSIBLE LEGEND PANEL (Bottom-Left)
+                var isLegendExpanded by remember { mutableStateOf(false) }
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .padding(16.dp)
+                ) {
+                    if (isLegendExpanded) {
+                        Card(
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f)),
+                            shape = RoundedCornerShape(16.dp),
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
+                            modifier = Modifier.width(210.dp)
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(14.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text("Tree Legend", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, fontFamily = SerifFontFamily)
+                                    IconButton(
+                                        onClick = { isLegendExpanded = false },
+                                        modifier = Modifier.size(18.dp)
+                                    ) {
+                                        Icon(Icons.Filled.Close, contentDescription = "Close Legend", modifier = Modifier.size(12.dp))
+                                    }
+                                }
+                                Divider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
+                                LegendItem(color = MaleAccent, text = "Male Member")
+                                LegendItem(color = FemaleAccent, text = "Female Member")
+                                LegendItem(color = OtherAccent, text = "Other")
+                                Divider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(24.dp, 3.dp)
+                                            .background(Color(0xFFA94A2D)) // Terracotta spouse line
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text("Spouse Link", style = MaterialTheme.typography.bodySmall, fontSize = 10.sp)
+                                }
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(24.dp, 3.dp)
+                                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)) // Jade parent line
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text("Parent-Child Link", style = MaterialTheme.typography.bodySmall, fontSize = 10.sp)
+                                }
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(12.dp)
+                                            .clip(CircleShape)
+                                            .border(1.5.dp, Color(0xFFD4AF37), CircleShape) // Gold matched border
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text("Search Match Glow", style = MaterialTheme.typography.bodySmall, fontSize = 10.sp)
+                                }
+                            }
+                        }
+                    } else {
+                        Button(
+                            onClick = { isLegendExpanded = true },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.9f),
+                                contentColor = MaterialTheme.colorScheme.onSecondary
+                            ),
+                            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
+                            shape = RoundedCornerShape(10.dp),
+                            modifier = Modifier.height(34.dp)
+                        ) {
+                            Text("Show Legend", style = MaterialTheme.typography.labelMedium)
+                        }
+                    }
+                }
                 
-                // FLOATING CANVAS NAVIGATION CONTROLS (Zoom +, Zoom -, Reset)
+                // FLOATING CANVAS NAVIGATION CONTROLS (Zoom +, Zoom -, Reset, Fit Screen)
                 Column(
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
@@ -255,6 +344,38 @@ fun MegaTreeScreen(
                         contentColor = MaterialTheme.colorScheme.onPrimary
                     ) {
                         Text("—", style = MaterialTheme.typography.titleMedium)
+                    }
+                    SmallFloatingActionButton(
+                        onClick = {
+                            if (nodes.isNotEmpty() && nodePositions.isNotEmpty()) {
+                                var minX = Float.MAX_VALUE
+                                var minY = Float.MAX_VALUE
+                                var maxX = Float.MIN_VALUE
+                                var maxY = Float.MIN_VALUE
+                                val cardWidth = 220f
+                                val cardHeight = 90f
+                                
+                                nodePositions.values.forEach { pos ->
+                                    if (pos.x < minX) minX = pos.x
+                                    if (pos.y < minY) minY = pos.y
+                                    if (pos.x > maxX) maxX = pos.x
+                                    if (pos.y > maxY) maxY = pos.y
+                                }
+                                
+                                val treeWidth = maxX - minX + cardWidth
+                                val treeHeight = maxY - minY + cardHeight
+                                
+                                scale = 0.75f
+                                offset = Offset(-minX * scale + 150f, -minY * scale + 100f)
+                            } else {
+                                scale = 1f
+                                offset = Offset.Zero
+                            }
+                        },
+                        containerColor = MaterialTheme.colorScheme.secondary,
+                        contentColor = MaterialTheme.colorScheme.onSecondary
+                    ) {
+                        Text("⛶", style = MaterialTheme.typography.titleSmall)
                     }
                     SmallFloatingActionButton(
                         onClick = {
@@ -292,7 +413,8 @@ fun MegaTreeScreen(
                                 text = "Selected members: ${selectedNodeIds.size}",
                                 style = MaterialTheme.typography.titleSmall,
                                 fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.primary
+                                color = MaterialTheme.colorScheme.primary,
+                                fontFamily = SerifFontFamily
                             )
                             IconButton(
                                 onClick = { viewModel.toggleSelectionMode() },
@@ -342,5 +464,19 @@ fun MegaTreeScreen(
                 }
             }
         }
+    }
+}
+
+@Composable
+fun LegendItem(color: Color, text: String) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Box(
+            modifier = Modifier
+                .size(12.dp)
+                .clip(CircleShape)
+                .background(color)
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(text, style = MaterialTheme.typography.bodySmall, fontSize = 10.sp)
     }
 }

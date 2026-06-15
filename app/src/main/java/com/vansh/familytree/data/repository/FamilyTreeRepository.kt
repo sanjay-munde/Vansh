@@ -62,6 +62,8 @@ class FamilyTreeRepository @Inject constructor(
 
     fun getMediaForMember(memberId: String): Flow<List<Media>> = mediaDao.getMediaForMember(memberId)
 
+    fun getAllProfilePhotos(): Flow<List<Media>> = mediaDao.getAllProfilePhotos()
+
     suspend fun insertMedia(media: Media) = mediaDao.insertMedia(media)
 
     suspend fun deleteMedia(media: Media) = mediaDao.deleteMedia(media)

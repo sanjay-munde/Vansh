@@ -13,7 +13,6 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.List
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -30,14 +29,13 @@ import androidx.core.os.LocaleListCompat
 import com.vansh.familytree.R
 import com.vansh.familytree.data.entity.Member
 import com.vansh.familytree.data.entity.Gender
-import com.vansh.familytree.ui.theme.MaleAccent
-import com.vansh.familytree.ui.theme.FemaleAccent
-import com.vansh.familytree.ui.theme.OtherAccent
-import com.vansh.familytree.ui.theme.LivingAccent
-import com.vansh.familytree.ui.theme.DeceasedAccent
+import com.vansh.familytree.ui.theme.*
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import coil.compose.AsyncImage
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.foundation.BorderStroke
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -50,6 +48,7 @@ fun MemberListScreen(
 ) {
     val members by viewModel.members.collectAsState()
     val filterCriteria by viewModel.filterCriteria.collectAsState()
+    val profilePhotos by viewModel.profilePhotos.collectAsState()
     
     var showFilterSheet by remember { mutableStateOf(false) }
 
@@ -59,7 +58,10 @@ fun MemberListScreen(
                 title = { 
                     Text(
                         stringResource(R.string.family_members), 
-                        style = MaterialTheme.typography.titleLarge
+                        style = MaterialTheme.typography.titleLarge.copy(
+                            fontFamily = SerifFontFamily,
+                            fontWeight = FontWeight.Bold
+                        )
                     ) 
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -110,7 +112,8 @@ fun MemberListScreen(
             FloatingActionButton(
                 onClick = { onNavigateToMemberForm(null) },
                 containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary
+                contentColor = MaterialTheme.colorScheme.onPrimary,
+                shape = RoundedCornerShape(16.dp)
             ) {
                 Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.add_member))
             }
@@ -123,12 +126,12 @@ fun MemberListScreen(
                 .background(MaterialTheme.colorScheme.background)
         ) {
             
-            // Search and Filters Bar
+            // Search and Filters Bar (Glassmorphic look)
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    .padding(horizontal = 16.dp, vertical = 14.dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 OutlinedTextField(
@@ -138,7 +141,7 @@ fun MemberListScreen(
                     placeholder = { Text(stringResource(R.string.search_by_name)) },
                     leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
                     singleLine = true,
-                    shape = RoundedCornerShape(12.dp),
+                    shape = RoundedCornerShape(14.dp),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedContainerColor = MaterialTheme.colorScheme.surface,
                         unfocusedContainerColor = MaterialTheme.colorScheme.surface
@@ -148,13 +151,13 @@ fun MemberListScreen(
                 Button(
                     onClick = { showFilterSheet = true },
                     modifier = Modifier.height(54.dp),
-                    shape = RoundedCornerShape(12.dp),
+                    shape = RoundedCornerShape(14.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.secondary,
                         contentColor = MaterialTheme.colorScheme.onSecondary
                     )
                 ) {
-                    Text(stringResource(R.string.filters))
+                    Text(stringResource(R.string.filters), style = MaterialTheme.typography.labelLarge)
                 }
             }
 
@@ -163,20 +166,31 @@ fun MemberListScreen(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        stringResource(R.string.no_family_members_found), 
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = Color.Gray
-                    )
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Text(
+                            "📍", 
+                            style = MaterialTheme.typography.displayMedium
+                        )
+                        Text(
+                            stringResource(R.string.no_family_members_found), 
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = Color.Gray,
+                            fontFamily = SerifFontFamily
+                        )
+                    }
                 }
             } else {
                 LazyColumn(
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     items(members, key = { it.id }) { member ->
                         MemberCard(
                             member = member,
+                            profilePhotoUri = profilePhotos[member.id],
                             onClick = { onNavigateToMemberProfile(member.id) }
                         )
                     }
@@ -187,21 +201,24 @@ fun MemberListScreen(
         if (showFilterSheet) {
             ModalBottomSheet(
                 onDismissRequest = { showFilterSheet = false },
-                containerColor = MaterialTheme.colorScheme.surface
+                containerColor = MaterialTheme.colorScheme.surface,
+                shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
             ) {
                 Column(
                     modifier = Modifier
                         .padding(24.dp)
                         .fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                    verticalArrangement = Arrangement.spacedBy(18.dp)
                 ) {
                     Text(
                         stringResource(R.string.filters), 
-                        style = MaterialTheme.typography.titleLarge,
+                        style = MaterialTheme.typography.titleLarge.copy(fontFamily = SerifFontFamily, fontWeight = FontWeight.Bold),
                         color = MaterialTheme.colorScheme.primary
                     )
                     
-                    Text(stringResource(R.string.status), style = MaterialTheme.typography.labelLarge)
+                    Divider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
+
+                    Text(stringResource(R.string.status), style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         listOf(
                             Pair(stringResource(R.string.all), null),
@@ -217,7 +234,7 @@ fun MemberListScreen(
                         }
                     }
 
-                    Text(stringResource(R.string.gender), style = MaterialTheme.typography.labelLarge)
+                    Text(stringResource(R.string.gender), style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         listOf(
                             Pair(stringResource(R.string.all), null),
@@ -240,10 +257,10 @@ fun MemberListScreen(
                         modifier = Modifier.fillMaxWidth(),
                         label = { Text(stringResource(R.string.place_of_birth)) },
                         singleLine = true,
-                        shape = RoundedCornerShape(8.dp)
+                        shape = RoundedCornerShape(10.dp)
                     )
                     
-                    Spacer(modifier = Modifier.height(32.dp))
+                    Spacer(modifier = Modifier.height(24.dp))
                 }
             }
         }
@@ -251,58 +268,74 @@ fun MemberListScreen(
 }
 
 @Composable
-fun MemberCard(member: Member, onClick: () -> Unit) {
+fun MemberCard(member: Member, profilePhotoUri: String?, onClick: () -> Unit) {
     val parsedColor = member.cardColor?.let { hex ->
         try {
             Color(android.graphics.Color.parseColor(hex))
         } catch (e: Exception) {
             null
         }
+    } ?: MaterialTheme.colorScheme.surface
+
+    val accentColor = when (member.gender) {
+        Gender.MALE -> MaleAccent
+        Gender.FEMALE -> FemaleAccent
+        Gender.OTHER -> OtherAccent
     }
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = parsedColor),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(IntrinsicSize.Min),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Colored Branch Line Indicator
+            // Left Gender Accent Stripe
             Box(
                 modifier = Modifier
                     .width(6.dp)
                     .fillMaxHeight()
-                    .height(80.dp)
-                    .background(parsedColor ?: MaterialTheme.colorScheme.secondary.copy(alpha = 0.5f))
+                    .background(accentColor)
             )
             
-            Spacer(modifier = Modifier.width(12.dp))
+            Spacer(modifier = Modifier.width(14.dp))
             
-            // Initials Avatar
-            val initials = if (member.firstName.isNotEmpty()) member.firstName.take(1).uppercase() else "?"
-            val avatarGradient = when(member.gender) {
-                Gender.MALE -> Brush.linearGradient(colors = listOf(MaleAccent, MaleAccent.copy(alpha = 0.7f)))
-                Gender.FEMALE -> Brush.linearGradient(colors = listOf(FemaleAccent, FemaleAccent.copy(alpha = 0.7f)))
-                Gender.OTHER -> Brush.linearGradient(colors = listOf(OtherAccent, OtherAccent.copy(alpha = 0.7f)))
-            }
-            
+            // Avatar / Profile photo
             Box(
                 modifier = Modifier
-                    .size(48.dp)
+                    .padding(vertical = 12.dp)
+                    .size(52.dp)
                     .clip(CircleShape)
-                    .background(avatarGradient),
+                    .background(accentColor.copy(alpha = 0.12f))
+                    .border(2.dp, MaterialTheme.colorScheme.background, CircleShape),
                 contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = initials,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = Color.White
-                )
+                if (profilePhotoUri != null) {
+                    AsyncImage(
+                        model = profilePhotoUri,
+                        contentDescription = "Profile Photo",
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(CircleShape),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    val initials = if (member.firstName.isNotEmpty()) member.firstName.take(1).uppercase() else "?"
+                    Text(
+                        text = initials,
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                        color = accentColor,
+                        fontFamily = SerifFontFamily
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.width(16.dp))
@@ -316,13 +349,15 @@ fun MemberCard(member: Member, onClick: () -> Unit) {
                 val fullName = listOfNotNull(member.firstName, member.middleName, member.lastName).joinToString(" ")
                 Text(
                     text = fullName, 
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontFamily = SerifFontFamily,
+                        fontWeight = FontWeight.Bold
+                    ),
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 
                 Spacer(modifier = Modifier.height(4.dp))
                 
-                // Show DOB or age details
                 val subtitleText = buildString {
                     if (member.dateOfBirth != null) {
                         val birthYear = SimpleDateFormat("yyyy", Locale.getDefault()).format(Date(member.dateOfBirth))
@@ -342,7 +377,7 @@ fun MemberCard(member: Member, onClick: () -> Unit) {
                 Text(
                     text = subtitleText,
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color.Gray
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                 )
             }
 

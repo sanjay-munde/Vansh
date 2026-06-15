@@ -35,6 +35,9 @@ class TreeViewModel @Inject constructor(
     private val _nodePositions = MutableStateFlow<Map<String, Offset>>(emptyMap())
     val nodePositions: StateFlow<Map<String, Offset>> = _nodePositions
 
+    private val _profilePhotos = MutableStateFlow<Map<String, String>>(emptyMap())
+    val profilePhotos: StateFlow<Map<String, String>> = _profilePhotos
+
     private val _collapsedNodeIds = MutableStateFlow<Set<String>>(emptySet())
     val collapsedNodeIds: StateFlow<Set<String>> = _collapsedNodeIds
 
@@ -57,6 +60,15 @@ class TreeViewModel @Inject constructor(
 
     init {
         loadEntireGraph()
+        loadProfilePhotos()
+    }
+
+    private fun loadProfilePhotos() {
+        viewModelScope.launch {
+            repository.getAllProfilePhotos().collect { photos ->
+                _profilePhotos.value = photos.associate { it.memberId to it.uri }
+            }
+        }
     }
 
     private fun loadEntireGraph() {
@@ -65,19 +77,20 @@ class TreeViewModel @Inject constructor(
                 repository.getAllMembers(),
                 repository.getAllRelationships(),
                 _collapsedNodeIds,
-                _searchQuery,
                 _viewMode
-            ) { nodes, edges, collapsedIds, query, mode ->
-                
-                val filteredNodes = if (query.isBlank()) {
-                    nodes
-                } else {
-                    nodes.filter { it.firstName.contains(query, ignoreCase = true) || it.lastName.contains(query, ignoreCase = true) }
-                }
-
-                _graphNodes.value = filteredNodes
+            ) { nodes, edges, collapsedIds, mode ->
+                _graphNodes.value = nodes
                 _graphEdges.value = edges
-                _nodePositions.value = layoutEngine.computeLayout(filteredNodes, edges, collapsedIds, mode)
+                _nodePositions.value = layoutEngine.computeLayout(
+                    nodes = nodes,
+                    edges = edges,
+                    collapsedNodeIds = collapsedIds,
+                    viewMode = mode,
+                    cardWidth = 220f,
+                    cardHeight = 90f,
+                    horizontalSpacing = 50f,
+                    verticalSpacing = 110f
+                )
             }.collect { }
         }
     }

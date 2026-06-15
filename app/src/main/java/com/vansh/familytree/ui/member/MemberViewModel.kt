@@ -24,6 +24,17 @@ class MemberViewModel @Inject constructor(
     private val _filterCriteria = MutableStateFlow(FilterCriteria())
     val filterCriteria: StateFlow<FilterCriteria> = _filterCriteria
 
+    private val _profilePhotos = MutableStateFlow<Map<String, String>>(emptyMap())
+    val profilePhotos: StateFlow<Map<String, String>> = _profilePhotos
+
+    init {
+        viewModelScope.launch {
+            repository.getAllProfilePhotos().collect { photos ->
+                _profilePhotos.value = photos.associate { it.memberId to it.uri }
+            }
+        }
+    }
+
     val members: StateFlow<List<Member>> = _filterCriteria
         .flatMapLatest { criteria ->
             repository.filterMembers(criteria)

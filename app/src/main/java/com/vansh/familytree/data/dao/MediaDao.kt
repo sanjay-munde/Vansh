@@ -13,6 +13,9 @@ interface MediaDao {
     @Query("SELECT * FROM media WHERE memberId = :memberId")
     fun getMediaForMember(memberId: String): Flow<List<Media>>
 
+    @Query("SELECT * FROM media WHERE isProfilePhoto = 1")
+    fun getAllProfilePhotos(): Flow<List<Media>>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertMedia(media: Media)
 

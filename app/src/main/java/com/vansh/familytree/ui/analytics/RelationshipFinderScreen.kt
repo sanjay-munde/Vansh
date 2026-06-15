@@ -30,15 +30,18 @@ import com.vansh.familytree.data.entity.RelationshipType
 import com.vansh.familytree.data.entity.Gender
 import com.vansh.familytree.data.repository.FamilyTreeRepository
 import com.vansh.familytree.domain.kinship.KinshipCalculator
-import com.vansh.familytree.ui.theme.MaleAccent
-import com.vansh.familytree.ui.theme.FemaleAccent
-import com.vansh.familytree.ui.theme.OtherAccent
+import com.vansh.familytree.ui.theme.*
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import coil.compose.AsyncImage
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.border
+import androidx.compose.ui.text.style.TextOverflow
 
 @HiltViewModel
 class RelationshipFinderViewModel @Inject constructor(
@@ -63,6 +66,9 @@ class RelationshipFinderViewModel @Inject constructor(
     private val _allRelationships = MutableStateFlow<List<Relationship>>(emptyList())
     val allRelationships: StateFlow<List<Relationship>> = _allRelationships
 
+    private val _profilePhotos = MutableStateFlow<Map<String, String>>(emptyMap())
+    val profilePhotos: StateFlow<Map<String, String>> = _profilePhotos
+
     init {
         viewModelScope.launch {
             repository.getAllMembers().collect {
@@ -72,6 +78,11 @@ class RelationshipFinderViewModel @Inject constructor(
         viewModelScope.launch {
             repository.getAllRelationships().collect {
                 _allRelationships.value = it
+            }
+        }
+        viewModelScope.launch {
+            repository.getAllProfilePhotos().collect { photos ->
+                _profilePhotos.value = photos.associate { it.memberId to it.uri }
             }
         }
     }
@@ -141,14 +152,22 @@ fun RelationshipFinderScreen(
     val path by viewModel.kinshipPath.collectAsState()
     val visualPath by viewModel.visualPath.collectAsState()
     val allRelationships by viewModel.allRelationships.collectAsState()
+    val profilePhotos by viewModel.profilePhotos.collectAsState()
     
     var expandedA by remember { mutableStateOf(false) }
     var expandedB by remember { mutableStateOf(false) }
 
+    val primaryGradient = Brush.horizontalGradient(
+        colors = listOf(
+            MaterialTheme.colorScheme.primary,
+            MaterialTheme.colorScheme.secondary.copy(alpha = 0.9f)
+        )
+    )
+
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.relationship_finder), style = MaterialTheme.typography.titleLarge) },
+                title = { Text(stringResource(R.string.relationship_finder), style = MaterialTheme.typography.titleLarge.copy(fontFamily = SerifFontFamily, fontWeight = FontWeight.Bold)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
@@ -176,7 +195,8 @@ fun RelationshipFinderScreen(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                 shape = RoundedCornerShape(16.dp),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
             ) {
                 Column(
                     modifier = Modifier.padding(16.dp),
@@ -184,8 +204,7 @@ fun RelationshipFinderScreen(
                 ) {
                     Text(
                         text = "Select Family Members",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.titleMedium.copy(fontFamily = SerifFontFamily, fontWeight = FontWeight.Bold),
                         color = MaterialTheme.colorScheme.primary
                     )
                     
@@ -200,7 +219,7 @@ fun RelationshipFinderScreen(
                                 .fillMaxWidth(),
                             label = { Text(stringResource(R.string.member_1)) },
                             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedA) },
-                            shape = RoundedCornerShape(8.dp)
+                            shape = RoundedCornerShape(10.dp)
                         )
                         ExposedDropdownMenu(expanded = expandedA, onDismissRequest = { expandedA = false }) {
                             members.forEach { m ->
@@ -226,7 +245,7 @@ fun RelationshipFinderScreen(
                                 .fillMaxWidth(),
                             label = { Text(stringResource(R.string.member_2)) },
                             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedB) },
-                            shape = RoundedCornerShape(8.dp)
+                            shape = RoundedCornerShape(10.dp)
                         )
                         ExposedDropdownMenu(expanded = expandedB, onDismissRequest = { expandedB = false }) {
                             members.forEach { m ->
@@ -246,29 +265,36 @@ fun RelationshipFinderScreen(
             // Result Cards
             if (memberA != null && memberB != null) {
                 if (path != null) {
-                    // Kinship Text Description Card
+                    // Kinship Text Description Card (Terracotta/Jade gradient)
                     Card(
                         modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
-                        shape = RoundedCornerShape(16.dp),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                        shape = RoundedCornerShape(18.dp),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f))
                     ) {
-                        Column(
-                            modifier = Modifier.padding(20.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(primaryGradient)
+                                .padding(20.dp),
+                            contentAlignment = Alignment.Center
                         ) {
-                            Text(
-                                text = "Calculated Relationship",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
-                            )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = path ?: "Unrelated",
-                                style = MaterialTheme.typography.headlineLarge,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer
-                            )
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Text(
+                                    text = "Calculated Relationship",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = Color.White.copy(alpha = 0.85f),
+                                    fontFamily = SerifFontFamily
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = path ?: "Unrelated",
+                                    style = MaterialTheme.typography.headlineMedium.copy(fontFamily = SerifFontFamily, fontWeight = FontWeight.Bold),
+                                    color = Color.White
+                                )
+                            }
                         }
                     }
 
@@ -278,7 +304,8 @@ fun RelationshipFinderScreen(
                             modifier = Modifier.fillMaxWidth(),
                             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                             shape = RoundedCornerShape(16.dp),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
                         ) {
                             Column(
                                 modifier = Modifier.padding(16.dp),
@@ -286,12 +313,11 @@ fun RelationshipFinderScreen(
                             ) {
                                 Text(
                                     text = "Pedigree Path Visualization",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold,
+                                    style = MaterialTheme.typography.titleMedium.copy(fontFamily = SerifFontFamily, fontWeight = FontWeight.Bold),
                                     color = MaterialTheme.colorScheme.primary
                                 )
                                 
-                                Divider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
+                                Divider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
                                 
                                 Row(
                                     modifier = Modifier
@@ -303,7 +329,7 @@ fun RelationshipFinderScreen(
                                 ) {
                                     visualPath.forEachIndexed { index, m ->
                                         // Render Member Node
-                                        PedigreeNode(member = m)
+                                        PedigreeNode(member = m, profilePhotoUri = profilePhotos[m.id])
 
                                         // Render Link Arrow if not last
                                         if (index < visualPath.size - 1) {
@@ -318,14 +344,14 @@ fun RelationshipFinderScreen(
                                             ) {
                                                 Text(
                                                     text = relationLabel, 
-                                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
-                                                    color = Color.Gray,
-                                                    fontWeight = FontWeight.Bold
+                                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp, fontWeight = FontWeight.Bold),
+                                                    color = MaterialTheme.colorScheme.secondary
                                                 )
                                                 Icon(
                                                     Icons.Filled.KeyboardArrowRight, 
                                                     contentDescription = null,
-                                                    tint = MaterialTheme.colorScheme.primary
+                                                    tint = MaterialTheme.colorScheme.primary,
+                                                    modifier = Modifier.size(20.dp)
                                                 )
                                             }
                                         }
@@ -345,18 +371,20 @@ fun RelationshipFinderScreen(
 }
 
 @Composable
-fun PedigreeNode(member: Member) {
+fun PedigreeNode(member: Member, profilePhotoUri: String?) {
     val initials = if (member.firstName.isNotEmpty()) member.firstName.take(1).uppercase() else "?"
-    val bgGradient = when(member.gender) {
-        Gender.MALE -> Brush.linearGradient(colors = listOf(MaleAccent, MaleAccent.copy(alpha = 0.7f)))
-        Gender.FEMALE -> Brush.linearGradient(colors = listOf(FemaleAccent, FemaleAccent.copy(alpha = 0.7f)))
-        Gender.OTHER -> Brush.linearGradient(colors = listOf(OtherAccent, OtherAccent.copy(alpha = 0.7f)))
+    
+    val accentColor = when(member.gender) {
+        Gender.MALE -> MaleAccent
+        Gender.FEMALE -> FemaleAccent
+        Gender.OTHER -> OtherAccent
     }
     
     Card(
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
-        modifier = Modifier.width(130.dp)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
+        modifier = Modifier.width(130.dp),
+        border = BorderStroke(1.dp, accentColor.copy(alpha = 0.4f))
     ) {
         Column(
             modifier = Modifier.padding(10.dp),
@@ -364,24 +392,37 @@ fun PedigreeNode(member: Member) {
         ) {
             Box(
                 modifier = Modifier
-                    .size(36.dp)
+                    .size(40.dp)
                     .clip(CircleShape)
-                    .background(bgGradient),
+                    .background(accentColor.copy(alpha = 0.15f))
+                    .border(1.5.dp, accentColor, CircleShape),
                 contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = initials, 
-                    style = MaterialTheme.typography.titleSmall,
-                    color = Color.White,
-                    fontWeight = FontWeight.Bold
-                )
+                if (profilePhotoUri != null) {
+                    AsyncImage(
+                        model = profilePhotoUri,
+                        contentDescription = null,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(CircleShape),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    Text(
+                        text = initials, 
+                        style = MaterialTheme.typography.titleSmall,
+                        color = accentColor,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = SerifFontFamily
+                    )
+                }
             }
             Spacer(modifier = Modifier.height(6.dp))
             Text(
                 text = "${member.firstName} ${member.lastName.take(1)}.",
-                style = MaterialTheme.typography.bodySmall,
-                fontWeight = FontWeight.Bold,
-                maxLines = 1
+                style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold, fontFamily = SerifFontFamily),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
         }
     }

@@ -21,10 +21,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.vansh.familytree.R
-import com.vansh.familytree.ui.theme.LivingAccent
-import com.vansh.familytree.ui.theme.DeceasedAccent
-import com.vansh.familytree.ui.theme.MaleAccent
-import com.vansh.familytree.ui.theme.FemaleAccent
+import com.vansh.familytree.ui.theme.*
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.foundation.BorderStroke
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -34,10 +33,17 @@ fun AnalyticsScreen(
 ) {
     val state by viewModel.state.collectAsState()
 
+    val primaryGradient = Brush.horizontalGradient(
+        colors = listOf(
+            MaterialTheme.colorScheme.primary,
+            MaterialTheme.colorScheme.secondary.copy(alpha = 0.9f)
+        )
+    )
+
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.family_analytics), style = MaterialTheme.typography.titleLarge) },
+                title = { Text(stringResource(R.string.family_analytics), style = MaterialTheme.typography.titleLarge.copy(fontFamily = SerifFontFamily, fontWeight = FontWeight.Bold)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
@@ -61,56 +67,65 @@ fun AnalyticsScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             
-            // Hero Total Members Card
+            // Hero Total Members Card (Gradient fill)
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary),
-                shape = RoundedCornerShape(16.dp),
-                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                shape = RoundedCornerShape(20.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f))
             ) {
-                Column(
-                    modifier = Modifier.padding(24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(primaryGradient)
+                        .padding(24.dp),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        text = stringResource(R.string.total_members),
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f)
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = state.totalMembers.toString(),
-                        style = MaterialTheme.typography.displayLarge.copy(fontSize = 64.sp),
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onPrimary
-                    )
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = stringResource(R.string.total_members),
+                            style = MaterialTheme.typography.titleMedium,
+                            color = Color.White.copy(alpha = 0.85f),
+                            fontFamily = SerifFontFamily
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = state.totalMembers.toString(),
+                            style = MaterialTheme.typography.displayLarge.copy(fontSize = 64.sp),
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White,
+                            fontFamily = SerifFontFamily
+                        )
+                    }
                 }
             }
 
             // Grid of Stats Cards
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 // Living vs Deceased Card
                 Card(
                     modifier = Modifier.weight(1f),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                     shape = RoundedCornerShape(16.dp),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
                 ) {
                     Column(
                         modifier = Modifier.padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
                         Text(
                             text = "Vital Status",
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold, fontFamily = SerifFontFamily),
                             color = MaterialTheme.colorScheme.primary
                         )
                         
-                        Divider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
+                        Divider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
                         
                         StatItem(
                             label = stringResource(R.string.living),
@@ -132,7 +147,7 @@ fun AnalyticsScreen(
                                     .fillMaxWidth()
                                     .height(8.dp)
                                     .clip(RoundedCornerShape(4.dp))
-                                    .background(DeceasedAccent.copy(alpha = 0.2f))
+                                    .background(DeceasedAccent.copy(alpha = 0.15f))
                             ) {
                                 Box(
                                     modifier = Modifier
@@ -156,20 +171,20 @@ fun AnalyticsScreen(
                     modifier = Modifier.weight(1f),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                     shape = RoundedCornerShape(16.dp),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
                 ) {
                     Column(
                         modifier = Modifier.padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
                         Text(
                             text = stringResource(R.string.gender),
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold, fontFamily = SerifFontFamily),
                             color = MaterialTheme.colorScheme.primary
                         )
                         
-                        Divider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
+                        Divider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
                         
                         StatItem(
                             label = stringResource(R.string.male),
@@ -191,7 +206,7 @@ fun AnalyticsScreen(
                                     .fillMaxWidth()
                                     .height(8.dp)
                                     .clip(RoundedCornerShape(4.dp))
-                                    .background(Color.LightGray.copy(alpha = 0.3f))
+                                    .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.15f))
                             ) {
                                 Box(
                                     modifier = Modifier
@@ -216,7 +231,8 @@ fun AnalyticsScreen(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                 shape = RoundedCornerShape(16.dp),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
             ) {
                 Column(
                     modifier = Modifier.padding(16.dp),
@@ -224,11 +240,10 @@ fun AnalyticsScreen(
                 ) {
                     Text(
                         text = stringResource(R.string.insights),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, fontFamily = SerifFontFamily),
                         color = MaterialTheme.colorScheme.primary
                     )
-                    Divider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
+                    Divider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
                     
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -242,8 +257,7 @@ fun AnalyticsScreen(
                             )
                             Text(
                                 text = "${String.format("%.1f", state.averageAge)} ${stringResource(R.string.years)}",
-                                style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.Bold
+                                style = MaterialTheme.typography.titleLarge.copy(fontFamily = SerifFontFamily, fontWeight = FontWeight.Bold)
                             )
                         }
                         
@@ -255,8 +269,7 @@ fun AnalyticsScreen(
                             )
                             Text(
                                 text = "${state.maxGenerationDepth} ${stringResource(R.string.generations)}",
-                                style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.Bold
+                                style = MaterialTheme.typography.titleLarge.copy(fontFamily = SerifFontFamily, fontWeight = FontWeight.Bold)
                             )
                         }
                     }
@@ -268,7 +281,8 @@ fun AnalyticsScreen(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                 shape = RoundedCornerShape(16.dp),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
             ) {
                 Column(
                     modifier = Modifier.padding(16.dp),
@@ -276,11 +290,10 @@ fun AnalyticsScreen(
                 ) {
                     Text(
                         text = "Fun Facts & Historical Archives",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, fontFamily = SerifFontFamily),
                         color = MaterialTheme.colorScheme.primary
                     )
-                    Divider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
+                    Divider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
                     
                     if (state.longestLivingMemberName != null) {
                         ProfileFactRow("Longest Lived", "${state.longestLivingMemberName} (${state.longestLivingAge} yrs)")
@@ -299,6 +312,8 @@ fun AnalyticsScreen(
                     ProfileFactRow("Parent-Child Links", state.parentChildLinkCount.toString())
                 }
             }
+            
+            Spacer(modifier = Modifier.height(16.dp))
         }
     }
 }
@@ -314,13 +329,13 @@ fun StatItem(label: String, value: String, color: Color) {
             Box(
                 modifier = Modifier
                     .size(10.dp)
-                    .clip(RoundedCornerShape(2.dp))
+                    .clip(RoundedCornerShape(3.dp))
                     .background(color)
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(label, style = MaterialTheme.typography.bodyMedium, color = Color.Gray)
         }
-        Text(value, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+        Text(value, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
     }
 }
 
@@ -333,6 +348,6 @@ fun ProfileFactRow(label: String, value: String) {
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Text(label, style = MaterialTheme.typography.bodyMedium, color = Color.Gray)
-        Text(value, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
+        Text(value, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium))
     }
 }
